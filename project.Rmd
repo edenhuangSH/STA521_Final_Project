@@ -35,12 +35,6 @@ load("ames_train.Rdata")
 miss = apply(is.na(ames_train), 2, sum)
 print(miss[miss>0])
 
-#Finds variables with only one unique observation
-for(p in 1:length(ames_train)) {
-  entries = unique(ames_train[,p])
-  if (nrow(entries) == 1) print(entries)
-}
-
 #May consider adding Lot.Frontage back in, as it only had 286 missing
 ames_train = ames_train %>%  mutate(has.alley = ifelse(!is.na(Alley), 1, 0)) %>%
   mutate(has.pool = ifelse(Pool.Area > 0, 1, 0)) %>%
@@ -61,6 +55,12 @@ ames_train = ames_train %>%  mutate(has.alley = ifelse(!is.na(Alley), 1, 0)) %>%
   filter(!is.na(Garage.Qual)) %>%
   filter(!is.na(Garage.Cond)) %>%
   select(-Alley, -Pool.QC, -Fence, -Misc.Feature, -Fireplace.Qu, -Lot.Frontage)
+
+#Finds variables with only one unique observation
+for(p in 1:length(ames_train)) {
+  entries = unique(ames_train[,p])
+  if (nrow(entries) == 1) print(entries)
+}
 ```
 
 The `Neighborhood` variable, typically of little interest other than to model the location effect, may be of more relevance when used with the [map](http://www.amstat.org/publications/jse/v19n3/decock/AmesResidential.pdf).
