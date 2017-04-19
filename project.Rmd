@@ -58,7 +58,9 @@ ames_train = ames_train %>% filter(!is.na(Garage.Type))%>%
   mutate(has.fence = ifelse(!is.na(Fence), 1, 0)) %>%
   mutate(has.shed.or.second.garage = ifelse(!is.na(Misc.Feature), 1, 0)) %>%
   mutate(has.fireplace = ifelse(Fireplaces > 0, 1, 0)) %>%
-  select(-Alley, -Pool.QC, -Fence, -Misc.Feature, -Fireplace.Qu, -Lot.Frontage, -Sale.Condition)
+  mutate(has.basement = ifelse(!is.na(Bsmt.Qual), 1, 0)) %>%
+  mutate(has.garage = ifelse(!is.na(Garage.Type), 1, 0)) %>%
+  select(-Alley, -Pool.QC, -Fence, -Misc.Feature, -Fireplace.Qu, -Lot.Frontage)
 ```
 
 The `Neighborhood` variable, typically of little interest other than to model the location effect, may be of more relevance when used with the [map](http://www.amstat.org/publications/jse/v19n3/decock/AmesResidential.pdf).
