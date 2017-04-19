@@ -42,7 +42,14 @@ for(p in 1:length(ames_train)) {
 }
 
 #May consider adding Lot.Frontage back in, as it only had 286 missing
-ames_train = ames_train %>% filter(!is.na(Garage.Type))%>%
+ames_train = ames_train %>%  mutate(has.alley = ifelse(!is.na(Alley), 1, 0)) %>%
+  mutate(has.pool = ifelse(Pool.Area > 0, 1, 0)) %>%
+  mutate(has.fence = ifelse(!is.na(Fence), 1, 0)) %>%
+  mutate(has.shed.or.second.garage = ifelse(!is.na(Misc.Feature), 1, 0)) %>%
+  mutate(has.fireplace = ifelse(Fireplaces > 0, 1, 0)) %>%
+  mutate(has.basement = ifelse(!is.na(Bsmt.Qual), 1, 0)) %>%
+  mutate(has.garage = ifelse(!is.na(Garage.Type), 1, 0)) %>%
+  filter(!is.na(Garage.Type))%>%
   filter(!is.na(Mas.Vnr.Area)) %>% 
   filter(!is.na(Bsmt.Qual)) %>% 
   filter(!is.na(Bsmt.Cond)) %>% 
@@ -53,13 +60,6 @@ ames_train = ames_train %>% filter(!is.na(Garage.Type))%>%
   filter(!is.na(Garage.Finish)) %>% 
   filter(!is.na(Garage.Qual)) %>%
   filter(!is.na(Garage.Cond)) %>%
-  mutate(has.alley = ifelse(!is.na(Alley), 1, 0)) %>%
-  mutate(has.pool = ifelse(Pool.Area > 0, 1, 0)) %>%
-  mutate(has.fence = ifelse(!is.na(Fence), 1, 0)) %>%
-  mutate(has.shed.or.second.garage = ifelse(!is.na(Misc.Feature), 1, 0)) %>%
-  mutate(has.fireplace = ifelse(Fireplaces > 0, 1, 0)) %>%
-  mutate(has.basement = ifelse(!is.na(Bsmt.Qual), 1, 0)) %>%
-  mutate(has.garage = ifelse(!is.na(Garage.Type), 1, 0)) %>%
   select(-Alley, -Pool.QC, -Fence, -Misc.Feature, -Fireplace.Qu, -Lot.Frontage)
 ```
 
