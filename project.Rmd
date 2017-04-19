@@ -36,6 +36,8 @@ miss = apply(is.na(ames_train), 2, sum)
 print(miss[miss>0])
 
 #May consider adding Lot.Frontage back in, as it only had 286 missing
+#Have to decide between filtering out N/A's for different Garage variables and only including 'has.garage'
+#Have to decide between filtering out N/A's for different Basement variables and only including 'has.basement'
 ames_train = ames_train %>%  mutate(has.alley = ifelse(!is.na(Alley), 1, 0)) %>%
   mutate(has.pool = ifelse(Pool.Area > 0, 1, 0)) %>%
   mutate(has.fence = ifelse(!is.na(Fence), 1, 0)) %>%
@@ -43,7 +45,7 @@ ames_train = ames_train %>%  mutate(has.alley = ifelse(!is.na(Alley), 1, 0)) %>%
   mutate(has.fireplace = ifelse(Fireplaces > 0, 1, 0)) %>%
   mutate(has.basement = ifelse(!is.na(Bsmt.Qual), 1, 0)) %>%
   mutate(has.garage = ifelse(!is.na(Garage.Type), 1, 0)) %>%
-  filter(!is.na(Garage.Type))%>%
+  filter(!is.na(Garage.Type))%>% 
   filter(!is.na(Mas.Vnr.Area)) %>% 
   filter(!is.na(Bsmt.Qual)) %>% 
   filter(!is.na(Bsmt.Cond)) %>% 
