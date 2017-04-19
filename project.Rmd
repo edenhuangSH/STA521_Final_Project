@@ -53,6 +53,11 @@ ames_train = ames_train %>% filter(!is.na(Garage.Type))%>%
   filter(!is.na(Garage.Finish)) %>% 
   filter(!is.na(Garage.Qual)) %>%
   filter(!is.na(Garage.Cond)) %>%
+  mutate(has.alley = ifelse(!is.na(Alley), 1, 0)) %>%
+  mutate(has.pool = ifelse(Pool.Area > 0, 1, 0)) %>%
+  mutate(has.fence = ifelse(!is.na(Fence), 1, 0)) %>%
+  mutate(has.shed.or.second.garage = ifelse(!is.na(Misc.Feature), 1, 0)) %>%
+  mutate(has.fireplace = ifelse(Fireplaces > 0, 1, 0)) %>%
   select(-Alley, -Pool.QC, -Fence, -Misc.Feature, -Fireplace.Qu, -Lot.Frontage, -Sale.Condition)
 ```
 
