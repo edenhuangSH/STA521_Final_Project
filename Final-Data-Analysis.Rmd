@@ -27,7 +27,7 @@ and update accordingly rather than editing this.
 
 To get started read in the training data:
 ```{r read-data}
-load("Data/ames_train.Rdata")
+load("ames_train.Rdata")
 ```
 
 The `Neighborhood` variable, typically of little interest other than to model the location effect, may be of more relevance when used with the [map](http://www.amstat.org/publications/jse/v19n3/decock/AmesResidential.pdf).
@@ -48,7 +48,7 @@ model1 = lm(price ~ TotalSq, data=ames_train)
 Create predicted values for price using your model using the testing data
 
 ```{r read-test-data}
-load("Data/ames_test.Rdata")
+load("ames_test.Rdata")
 ```
 
 ```{r predict-model1, echo=FALSE}
@@ -58,6 +58,7 @@ Yhat = predict(model1, newdata=ames_test, interval = "pred")
 You should save your predictions in a dataframe with columns for `PID`  (property identifier), `fit`, predicted values on the test data, and where possible `lwr` and `upr`, lower and upper 95% interval estimates for predicting `price`. 
 
 ```{r create }
+# name dataframe as predictions! DO NOT CHANGE
 predictions = as.data.frame(Yhat)
 predictions$PID = ames_test$PID
 save(predictions, file="predict.Rdata")
@@ -89,7 +90,8 @@ Update your predictions using your complex model to provide point estimates and 
 
 ```{r predict-model2, echo=FALSE}
 # replace model1 with model2
-Yhat = predict(model1, newdata=ames_test, interval = "pred")
+predictions = as.data.frame(predict(model1, newdata=ames_test, interval = "pred"))
+predictions$PIP = ames_test$PIP
 save(Yhat, file="predict.Rdata")
 ```
 
@@ -142,6 +144,8 @@ Once you are satisfied with your model, provide a write up of your data analysis
 ### Part IV
 Create predictions for the validation data from your final model and write out to a file `prediction-validation.Rdata`
 This should have the same format as the models in Part I and II.
+
+10 points
 
 ### Class Presentations
 
