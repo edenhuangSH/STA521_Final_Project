@@ -31,7 +31,7 @@ To get started read in the training data:
 library(dplyr)
 load("ames_train.Rdata")
 
-print(paste0("The dataset has ", dim(ames_train)[1], " numer of observations and ", dim(ames_train)[2], " features"))
+print(paste0("The dataset has ", dim(ames_train)[1], " number of observations and ", dim(ames_train)[2], " features"))
 
 #Variables with NA's and their proportion of missing data
 miss = apply(is.na(ames_train), 2, sum)
@@ -39,6 +39,8 @@ miss_prop = round(miss[miss>0]/nrow(ames_train), 3)
 print(miss_prop) 
 which(miss_prop>0.5) # four features have greater than 50% of data missing
 
+
+#Created binary variables for whether or not a house as an alley, pool, fence, misc. feature, fireplace, basement or garage, as I thought it may be more meaningful- Tom
 #May consider adding Lot.Frontage back in, as it only had 286 missing
 #Have to decide between filtering out N/A's for different Garage variables and only including 'has.garage'
 #Have to decide between filtering out N/A's for different Basement variables and only including 'has.basement'
@@ -49,18 +51,19 @@ train = ames_train %>%  mutate(has.alley = ifelse(!is.na(Alley), 1, 0)) %>%
                         mutate(has.fireplace = ifelse(Fireplaces > 0, 1, 0)) %>%
                         mutate(has.basement = ifelse(!is.na(Bsmt.Qual), 1, 0)) %>%
                         mutate(has.garage = ifelse(!is.na(Garage.Type), 1, 0)) %>%
-                        filter(!is.na(Garage.Type))%>% 
+                        #filter(!is.na(Garage.Type))%>% 
                         filter(!is.na(Mas.Vnr.Area)) %>% 
-                        filter(!is.na(Bsmt.Qual)) %>% 
-                        filter(!is.na(Bsmt.Cond)) %>% 
-                        filter(!is.na(Bsmt.Exposure)) %>% 
-                        filter(!is.na(BsmtFin.Type.1)) %>% 
-                        filter(!is.na(BsmtFin.Type.2)) %>% 
-                        filter(!is.na(Garage.Yr.Blt)) %>% 
-                        filter(!is.na(Garage.Finish)) %>% 
-                        filter(!is.na(Garage.Qual)) %>%
-                        filter(!is.na(Garage.Cond)) %>%
-                        select(-Alley, -Pool.QC, -Fence, -Misc.Feature, -Fireplace.Qu, -Lot.Frontage)
+                        #filter(!is.na(Bsmt.Qual)) %>% 
+                        #filter(!is.na(Bsmt.Cond)) %>% 
+                        #filter(!is.na(Bsmt.Exposure)) %>% 
+                        #filter(!is.na(BsmtFin.Type.1)) %>% 
+                        #filter(!is.na(BsmtFin.Type.2)) %>% 
+                        #filter(!is.na(Garage.Yr.Blt)) %>% 
+                        #filter(!is.na(Garage.Finish)) %>% 
+                        #filter(!is.na(Garage.Qual)) %>%
+                        #filter(!is.na(Garage.Cond)) %>%
+                        select(-Alley, -Pool.QC, -Fence, -Misc.Feature, -Fireplace.Qu, -Lot.Frontage, -Garage.Type, -Bsmt.Qual, -Bsmt.Cond, -Bsmt.Exposure, -BsmtFin.Type.1, -BsmtFin.Type.2, -Garage.Yr.Blt, -Garage.Finish, -Garage.Qual, -Garage.Cond) %>% filter(!is.na(Bsmt.Full.Bath)) %>%
+  filter(!is.na(Bsmt.Half.Bath))
 
 #Finds variables with only one unique observation
 for(p in 1:length(train)) {
@@ -78,7 +81,87 @@ We are restricting attention to just the "normal sales" condition.
 In the first model you are allowed only limited manipulations of the original data set to predict the sales price `price`. You are allowed to take power transformations of the original variables [square roots, logs, inverses, squares, etc.] but you are NOT allowed to create interaction variables. This means that a variable may only be used once in an equation [if you use $ x^2$ don’t use $x$]. Additionally, you may eliminate any data points you deem unfit. This model should have a minimum r-square of 73% (in the original units) and contain at least 6 variables but fewer than 20.   
 
 ```{r model1}
-model1 = lm(price ~ 1, data=ames_train)
+model=lm(log(price)~., data=train)
+summary(model)
+
+#Model Selection by AIC
+step(model, k=2)
+AIC_model = lm(formula = log(price) ~ PID + area + MS.SubClass + MS.Zoning + 
+    Lot.Area + Lot.Shape + Utilities + Land.Slope + Neighborhood + 
+    Condition.1 + Bldg.Type + House.Style + Overall.Qual + Overall.Cond + 
+    Year.Built + Year.Remod.Add + Roof.Style + Roof.Matl + Exterior.1st + 
+    Exterior.2nd + Exter.Qual + Exter.Cond + Foundation + BsmtFin.SF.1 + 
+    BsmtFin.SF.2 + Bsmt.Unf.SF + Heating + Heating.QC + Central.Air + 
+    Electrical + X1st.Flr.SF + X2nd.Flr.SF + Bsmt.Full.Bath + 
+    Kitchen.Qual + Functional + Garage.Cars + Garage.Area + Paved.Drive + 
+    Wood.Deck.SF + Open.Porch.SF + Enclosed.Porch + Screen.Porch + 
+    Mo.Sold + Yr.Sold + has.fence + has.fireplace, data = train)
+summary(AIC_model)
+
+#Model Selection by BIC
+step(model, k=log(nrow(train)))
+BIC_model = lm(formula = log(price) ~ PID + area + MS.Zoning + Lot.Area + 
+    Neighborhood + Condition.1 + Bldg.Type + Overall.Qual + Overall.Cond + 
+    Year.Built + Year.Remod.Add + BsmtFin.SF.1 + BsmtFin.SF.2 + 
+    Bsmt.Unf.SF + Central.Air + Bsmt.Full.Bath + Kitchen.Qual + 
+    Functional + Garage.Cars + Garage.Area + Open.Porch.SF + 
+    Enclosed.Porch + Screen.Porch + has.fireplace, data = train)
+summary(BIC_model)
+
+#Use Boosting to find important variables
+
+library(gbm)
+
+boost = gbm(log(price) ~ PID + area + MS.Zoning + Lot.Area + 
+    Neighborhood + Condition.1 + Bldg.Type + Overall.Qual + Overall.Cond + 
+    Year.Built + Year.Remod.Add + BsmtFin.SF.1 + BsmtFin.SF.2 + 
+    Bsmt.Unf.SF + Central.Air + Bsmt.Full.Bath + Kitchen.Qual + 
+    Functional + Garage.Cars + Garage.Area + Open.Porch.SF + 
+    Enclosed.Porch + Screen.Porch + has.fireplace, data = train, distribution="gaussian", n.trees=5000, interaction.depth = 1, shrinkage=0.01, verbose = F)
+
+summary(boost)
+
+#Sparse Model (removed variables to bring the number below 20)
+sparse_model = lm(log(price) ~ area + MS.Zoning + Lot.Area + 
+    Neighborhood + Condition.1 + Overall.Qual + Overall.Cond + 
+    Year.Built + Year.Remod.Add + BsmtFin.SF.1 + BsmtFin.SF.2 + 
+    Bsmt.Unf.SF + Central.Air + Bsmt.Full.Bath + Kitchen.Qual + 
+    Functional + Garage.Cars + Garage.Area + has.fireplace, data = train)
+summary(sparse_model)
+plot(sparse_model)
+termplot(sparse_model, 
+    data = train)
+
+#Trying to detect non-linearity
+attach(train)
+plot(log(area), log(price))
+plot(log(Lot.Area), log(price))
+plot(log(Overall.Qual), log(price))
+plot(log(Overall.Cond), log(price))
+plot(log(Year.Built), log(price))
+plot(log(Year.Remod.Add, log(price)))
+plot(BsmtFin.SF.1, log(price))
+plot(BsmtFin.SF.2, log(price))
+plot(Bsmt.Unf.SF, log(price))
+plot(Bsmt.Full.Bath, log(price))
+plot(Garage.Cars, log(price))
+plot(Garage.Area, log(price))
+
+#Simple model (final)
+model1 = lm(log(price) ~ log(area) + MS.Zoning + log(Lot.Area) + 
+    Neighborhood + Condition.1 + log(Overall.Qual) + log(Overall.Cond) + 
+    log(Year.Built) + log(Year.Remod.Add) + BsmtFin.SF.1 + BsmtFin.SF.2 + 
+    Bsmt.Unf.SF + Central.Air + Bsmt.Full.Bath + Kitchen.Qual + 
+    Functional + Garage.Cars + Garage.Area + has.fireplace, data = train[-c(168, 461, 787),])
+summary(model1)
+plot(model1)
+
+#Plot Price Ranges of each neighborhood
+library(ggplot2)
+neighborhood.price.range = ggplot(train, aes(x = log(price), y = reorder(Neighborhood, desc(log(price)), median))) +
+  geom_polygon(color="SlateGray",size = 1, alpha=1) + theme_light() + coord_flip() + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(y="Neighborhood")
+
+plot(neighborhood.price.range)
 ```
 
 
