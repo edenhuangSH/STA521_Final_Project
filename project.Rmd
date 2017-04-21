@@ -31,36 +31,40 @@ To get started read in the training data:
 library(dplyr)
 load("ames_train.Rdata")
 
-#Variables with NA's and their counts
+print(paste0("The dataset has ", dim(ames_train)[1], " numer of observations and ", dim(ames_train)[2], " features"))
+
+#Variables with NA's and their proportion of missing data
 miss = apply(is.na(ames_train), 2, sum)
-print(miss[miss>0])
+miss_prop = round(miss[miss>0]/nrow(ames_train), 3)
+print(miss_prop) 
+which(miss_prop>0.5) # four features have greater than 50% of data missing
 
 #May consider adding Lot.Frontage back in, as it only had 286 missing
 #Have to decide between filtering out N/A's for different Garage variables and only including 'has.garage'
 #Have to decide between filtering out N/A's for different Basement variables and only including 'has.basement'
-ames_train = ames_train %>%  mutate(has.alley = ifelse(!is.na(Alley), 1, 0)) %>%
-  mutate(has.pool = ifelse(Pool.Area > 0, 1, 0)) %>%
-  mutate(has.fence = ifelse(!is.na(Fence), 1, 0)) %>%
-  mutate(has.shed.or.second.garage = ifelse(!is.na(Misc.Feature), 1, 0)) %>%
-  mutate(has.fireplace = ifelse(Fireplaces > 0, 1, 0)) %>%
-  mutate(has.basement = ifelse(!is.na(Bsmt.Qual), 1, 0)) %>%
-  mutate(has.garage = ifelse(!is.na(Garage.Type), 1, 0)) %>%
-  filter(!is.na(Garage.Type))%>% 
-  filter(!is.na(Mas.Vnr.Area)) %>% 
-  filter(!is.na(Bsmt.Qual)) %>% 
-  filter(!is.na(Bsmt.Cond)) %>% 
-  filter(!is.na(Bsmt.Exposure)) %>% 
-  filter(!is.na(BsmtFin.Type.1)) %>% 
-  filter(!is.na(BsmtFin.Type.2)) %>% 
-  filter(!is.na(Garage.Yr.Blt)) %>% 
-  filter(!is.na(Garage.Finish)) %>% 
-  filter(!is.na(Garage.Qual)) %>%
-  filter(!is.na(Garage.Cond)) %>%
-  select(-Alley, -Pool.QC, -Fence, -Misc.Feature, -Fireplace.Qu, -Lot.Frontage)
+train = ames_train %>%  mutate(has.alley = ifelse(!is.na(Alley), 1, 0)) %>%
+                        mutate(has.pool = ifelse(Pool.Area > 0, 1, 0)) %>%
+                        mutate(has.fence = ifelse(!is.na(Fence), 1, 0)) %>%
+                        mutate(has.shed.or.second.garage = ifelse(!is.na(Misc.Feature), 1, 0)) %>%
+                        mutate(has.fireplace = ifelse(Fireplaces > 0, 1, 0)) %>%
+                        mutate(has.basement = ifelse(!is.na(Bsmt.Qual), 1, 0)) %>%
+                        mutate(has.garage = ifelse(!is.na(Garage.Type), 1, 0)) %>%
+                        filter(!is.na(Garage.Type))%>% 
+                        filter(!is.na(Mas.Vnr.Area)) %>% 
+                        filter(!is.na(Bsmt.Qual)) %>% 
+                        filter(!is.na(Bsmt.Cond)) %>% 
+                        filter(!is.na(Bsmt.Exposure)) %>% 
+                        filter(!is.na(BsmtFin.Type.1)) %>% 
+                        filter(!is.na(BsmtFin.Type.2)) %>% 
+                        filter(!is.na(Garage.Yr.Blt)) %>% 
+                        filter(!is.na(Garage.Finish)) %>% 
+                        filter(!is.na(Garage.Qual)) %>%
+                        filter(!is.na(Garage.Cond)) %>%
+                        select(-Alley, -Pool.QC, -Fence, -Misc.Feature, -Fireplace.Qu, -Lot.Frontage)
 
 #Finds variables with only one unique observation
-for(p in 1:length(ames_train)) {
-  entries = unique(ames_train[,p])
+for(p in 1:length(train)) {
+  entries = unique(train[,p])
   if (nrow(entries) == 1) print(entries)
 }
 ```
