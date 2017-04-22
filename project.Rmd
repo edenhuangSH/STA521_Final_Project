@@ -204,6 +204,22 @@ You should save your predictions in a dataframe with columns for `PID`  (propert
 ```{r create }
 Y = test$price
 Yhat = exp(Yhat)
+
+#Bias
+mean(Yhat[,1] - Y)
+
+#Maximum Deviation
+max(abs(Y - Yhat[,1]))
+
+#Mean Absolute Deviation
+mean(abs(Y - Yhat[,1]))
+
+#RMSE
+sqrt(mean((Y - Yhat[,1])^2))
+
+#Coverage
+mean(Yhat[,"lwr"] < Y & Yhat[,"upr"] > Y)
+
 # name dataframe as predictions! DO NOT CHANGE
 predictions = as.data.frame(Yhat)
 predictions$PID = test$PID
@@ -223,24 +239,6 @@ Your models will be evaluated on the following criteria on the test data:
 * Coverage:  Average( lwr < Y < upr) 
 
 In order to have a passing wercker badge, your file for predictions needs to be the same length as the test data, with three columns:  fitted values, lower CI and upper CI values in that order with names, fit, lwr, and upr respectively.
-
-```{r}
-#Bias
-mean(Yhat[,1] - Y)
-
-#Maximum Deviation
-max(abs(Y - Yhat[,1]))
-
-#Mean Absolute Deviation
-mean(abs(Y - Yhat[,1]))
-
-#RMSE
-sqrt(mean((Y - Yhat[,1])^2))
-
-#Coverage
-mean(Yhat[,"lwr"] < Y & Yhat[,"upr"] > Y)
-```
-
 
 You will be able to see your scores on the score board (coming soon!).  They will be initialized by a predction based on the mean in the training data.
 
