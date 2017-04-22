@@ -148,16 +148,18 @@ plot(Garage.Cars, log(price))
 plot(Garage.Area, log(price))
 
 #Simple model (final)
+#Removed Kitchen.Qual because the test set has one more level for that variable and it won't run because of that; we may try finding another way to deal with this though, as all its levels on this model are highly significant, though it doesn't affect the R-squared that much
 model1 = lm(log(price) ~ log(area) + MS.Zoning + log(Lot.Area) + 
     Neighborhood + Condition.1 + log(Overall.Qual) + log(Overall.Cond) + 
     log(Year.Built) + log(Year.Remod.Add) + BsmtFin.SF.1 + BsmtFin.SF.2 + 
-    Bsmt.Unf.SF + Central.Air + Bsmt.Full.Bath + Kitchen.Qual + 
+    Bsmt.Unf.SF + Central.Air + Bsmt.Full.Bath +
     Functional + Garage.Cars + Garage.Area + has.fireplace, data = train[-c(168, 461, 787),])
 summary(model1)
 plot(model1)
 
 #Plot Price Ranges of each neighborhood
 library(ggplot2)
+
 neighborhood.price.range = ggplot(train, aes(x = log(price), y = reorder(Neighborhood, desc(log(price)), median))) +
   geom_polygon(color="SlateGray",size = 1, alpha=1) + theme_light() + coord_flip() + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(y="Neighborhood")
 
@@ -171,10 +173,48 @@ Create predicted values for price using your model using the testing data
 
 ```{r read-test-data}
 load("ames_test.Rdata")
+
+#Variables with NA's and their proportion of missing data
+miss = apply(is.na(ames_train), 2, sum)
+miss_prop = round(miss[miss>0]/nrow(ames_train), 3)
+print(miss_prop) 
+which(miss_prop>0.5) # four features have greater than 50% of data missing
+
+
+#Created binary variables for whether or not a house as an alley, pool, fence, misc. feature, fireplace, basement or garage, as I thought it may be more meaningful- Tom
+#May consider adding Lot.Frontage back in, as it only had 286 missing
+#Have to decide between filtering out N/A's for different Garage variables and only including 'has.garage'
+#Have to decide between filtering out N/A's for different Basement variables and only including 'has.basement'
+test = ames_test %>%  mutate(has.alley = ifelse(!is.na(Alley), 1, 0)) %>%
+                        mutate(has.pool = ifelse(Pool.Area > 0, 1, 0)) %>%
+                        mutate(has.fence = ifelse(!is.na(Fence), 1, 0)) %>%
+                        mutate(has.shed.or.second.garage = ifelse(!is.na(Misc.Feature), 1, 0)) %>%
+                        mutate(has.fireplace = ifelse(Fireplaces > 0, 1, 0)) %>%
+                        mutate(has.basement = ifelse(!is.na(Bsmt.Qual), 1, 0)) %>%
+                        mutate(has.garage = ifelse(!is.na(Garage.Type), 1, 0)) %>%
+                        #filter(!is.na(Garage.Type))%>% 
+                        filter(!is.na(Mas.Vnr.Area)) %>% 
+                        #filter(!is.na(Bsmt.Qual)) %>% 
+                        #filter(!is.na(Bsmt.Cond)) %>% 
+                        #filter(!is.na(Bsmt.Exposure)) %>% 
+                        #filter(!is.na(BsmtFin.Type.1)) %>% 
+                        #filter(!is.na(BsmtFin.Type.2)) %>% 
+                        #filter(!is.na(Garage.Yr.Blt)) %>% 
+                        #filter(!is.na(Garage.Finish)) %>% 
+                        #filter(!is.na(Garage.Qual)) %>%
+                        #filter(!is.na(Garage.Cond)) %>%
+                        select(-Alley, -Pool.QC, -Fence, -Misc.Feature, -Fireplace.Qu, -Lot.Frontage, -Garage.Type, -Bsmt.Qual, -Bsmt.Cond, -Bsmt.Exposure, -BsmtFin.Type.1, -BsmtFin.Type.2, -Garage.Yr.Blt, -Garage.Finish, -Garage.Qual, -Garage.Cond) %>% filter(!is.na(Bsmt.Full.Bath)) %>%
+  filter(!is.na(Bsmt.Half.Bath))
+
+#Finds variables with only one unique observation
+for(p in 1:length(train)) {
+  entries = unique(train[,p])
+  if (nrow(entries) == 1) print(entries)
+}
 ```
 
 ```{r predict-model1, echo=FALSE}
-Yhat = predict(model1, newdata=ames_test, interval = "pred")
+Yhat = predict(model1, newdata=test, interval="prediction")
 ```
 
 You should save your predictions in a dataframe with columns for `PID`  (property identifier), `fit`, predicted values on the test data, and where possible `lwr` and `upr`, lower and upper 95% interval estimates for predicting `price`. 
@@ -182,7 +222,7 @@ You should save your predictions in a dataframe with columns for `PID`  (propert
 ```{r create }
 # name dataframe as predictions! DO NOT CHANGE
 predictions = as.data.frame(Yhat)
-predictions$PID = ames_test$PID
+predictions$PID = test$PID
 save(predictions, file="predict.Rdata")
 ```
 
@@ -198,7 +238,26 @@ Your models will be evaluated on the following criteria on the test data:
 
 * Coverage:  Average( lwr < Y < upr) 
 
-In order to have a passing wercker badge, your file for predictions needs to be the same length as the test data, with three columns:  fitted values, lower CI and upper CI values in that order with names, fit, lwr, and upr respectively.  
+In order to have a passing wercker badge, your file for predictions needs to be the same length as the test data, with three columns:  fitted values, lower CI and upper CI values in that order with names, fit, lwr, and upr respectively.
+
+```{r}
+Y = test$price
+#Bias
+mean(exp(Yhat[,1]) - Y)
+
+#Maximum Deviation
+max(abs(Y - exp(Yhat[,1])))
+
+#Mean Absolute Deviation
+mean(abs(Y - exp(Yhat[,1])))
+
+#RMSE
+sqrt(mean((Y - exp(Yhat[,1]))^2))
+
+#Coverage
+mean(exp(predictions$lwr) < Y & exp(predictions$upr > Y))
+```
+
 
 You will be able to see your scores on the score board (coming soon!).  They will be initialized by a predction based on the mean in the training data.
 
