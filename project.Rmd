@@ -191,26 +191,8 @@ test = ames_test %>%  mutate(has.alley = ifelse(!is.na(Alley), 1, 0)) %>%
                         mutate(has.shed.or.second.garage = ifelse(!is.na(Misc.Feature), 1, 0)) %>%
                         mutate(has.fireplace = ifelse(Fireplaces > 0, 1, 0)) %>%
                         mutate(has.basement = ifelse(!is.na(Bsmt.Qual), 1, 0)) %>%
-                        mutate(has.garage = ifelse(!is.na(Garage.Type), 1, 0)) %>%
-                        #filter(!is.na(Garage.Type))%>% 
-                        filter(!is.na(Mas.Vnr.Area)) %>% 
-                        #filter(!is.na(Bsmt.Qual)) %>% 
-                        #filter(!is.na(Bsmt.Cond)) %>% 
-                        #filter(!is.na(Bsmt.Exposure)) %>% 
-                        #filter(!is.na(BsmtFin.Type.1)) %>% 
-                        #filter(!is.na(BsmtFin.Type.2)) %>% 
-                        #filter(!is.na(Garage.Yr.Blt)) %>% 
-                        #filter(!is.na(Garage.Finish)) %>% 
-                        #filter(!is.na(Garage.Qual)) %>%
-                        #filter(!is.na(Garage.Cond)) %>%
-                        select(-Alley, -Pool.QC, -Fence, -Misc.Feature, -Fireplace.Qu, -Lot.Frontage, -Garage.Type, -Bsmt.Qual, -Bsmt.Cond, -Bsmt.Exposure, -BsmtFin.Type.1, -BsmtFin.Type.2, -Garage.Yr.Blt, -Garage.Finish, -Garage.Qual, -Garage.Cond) %>% filter(!is.na(Bsmt.Full.Bath)) %>%
-  filter(!is.na(Bsmt.Half.Bath))
-
-#Finds variables with only one unique observation
-for(p in 1:length(train)) {
-  entries = unique(train[,p])
-  if (nrow(entries) == 1) print(entries)
-}
+                        mutate(has.garage = ifelse(!is.na(Garage.Type), 1, 0))
+                  
 ```
 
 ```{r predict-model1, echo=FALSE}
