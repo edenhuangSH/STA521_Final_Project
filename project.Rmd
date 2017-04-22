@@ -196,6 +196,7 @@ test = ames_test %>%  mutate(has.alley = ifelse(!is.na(Alley), 1, 0)) %>%
 ```
 
 ```{r predict-model1, echo=FALSE}
+test$price = log(test$price)
 Yhat = predict(model1, newdata=test, interval="prediction")
 ```
 
