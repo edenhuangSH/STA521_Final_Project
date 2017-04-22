@@ -196,13 +196,14 @@ test = ames_test %>%  mutate(has.alley = ifelse(!is.na(Alley), 1, 0)) %>%
 ```
 
 ```{r predict-model1, echo=FALSE}
-test$price = log(test$price)
 Yhat = predict(model1, newdata=test, interval="prediction")
 ```
 
 You should save your predictions in a dataframe with columns for `PID`  (property identifier), `fit`, predicted values on the test data, and where possible `lwr` and `upr`, lower and upper 95% interval estimates for predicting `price`. 
 
 ```{r create }
+Y = test$price
+Yhat = exp(Yhat)
 # name dataframe as predictions! DO NOT CHANGE
 predictions = as.data.frame(Yhat)
 predictions$PID = test$PID
@@ -224,21 +225,20 @@ Your models will be evaluated on the following criteria on the test data:
 In order to have a passing wercker badge, your file for predictions needs to be the same length as the test data, with three columns:  fitted values, lower CI and upper CI values in that order with names, fit, lwr, and upr respectively.
 
 ```{r}
-Y = test$price
 #Bias
-mean(exp(Yhat[,1]) - Y)
+mean(Yhat[,1] - Y)
 
 #Maximum Deviation
-max(abs(Y - exp(Yhat[,1])))
+max(abs(Y - Yhat[,1]))
 
 #Mean Absolute Deviation
-mean(abs(Y - exp(Yhat[,1])))
+mean(abs(Y - Yhat[,1]))
 
 #RMSE
-sqrt(mean((Y - exp(Yhat[,1]))^2))
+sqrt(mean((Y - Yhat[,1])^2))
 
 #Coverage
-mean(exp(predictions$lwr) < Y & exp(predictions$upr > Y))
+mean(Yhat[,"lwr"] < Y & Yhat[,"upr"] > Y)
 ```
 
 
