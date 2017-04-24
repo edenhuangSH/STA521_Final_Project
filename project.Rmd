@@ -76,9 +76,21 @@ The `Neighborhood` variable, typically of little interest other than to model th
 
 We are restricting attention to just the "normal sales" condition.
 
+
 ## Part I: Simple Model
 
 In the first model you are allowed only limited manipulations of the original data set to predict the sales price `price`. You are allowed to take power transformations of the original variables [square roots, logs, inverses, squares, etc.] but you are NOT allowed to create interaction variables. This means that a variable may only be used once in an equation [if you use $ x^2$ don’t use $x$]. Additionally, you may eliminate any data points you deem unfit. This model should have a minimum r-square of 73% (in the original units) and contain at least 6 variables but fewer than 20.   
+
+
+```{r}
+library(MASS)
+model=lm(price~., data=train)
+boxcox(model)
+
+model=lm(log(price)~., data=train)
+summary(model)
+```
+
 
 ```{r model1}
 model=lm(log(price)~., data=train)
@@ -244,6 +256,9 @@ You will be able to see your scores on the score board (coming soon!).  They wil
 
 _Model Check_ - Test your prediction on the first observation in the training and test data set to make sure that the model gives a reasonable answer and include this in a supplement of your report. This should be done BY HAND using a calculator (this means use the raw data from the original dataset and manually calculate all transformations and interactions with your calculator)! Models that do not give reasonable answers will be given a minimum 2 letter grade reduction. Also be careful as you cannot use certain transformations [log or inverse x] if a variable has values of 0.
 
+
+
+
 ### Part II: Complex Model
 
 In this part you may go all out for constructing a best fitting model for predicting housing prices using methods that we have covered this semester.  You should feel free to to create any new variables (such as quadratic, interaction, or indicator variables, splines, etc). The variable `TotalSq = X1st.Flr.SF+X2nd.Flr.SF` was added to the dataframe (that does not include basement area, so you may improve on this. A relative grade is assigned by comparing your fit on the test set to that of your fellow students with bonus points awarded to those who substantially exceed their fellow students and point reductions occurring for models which fit exceedingly poorly.  
@@ -259,11 +274,15 @@ save(predictions, file="predict.Rdata")
 
 You may iterate here as much as you like exploring different models until you are satisfied with your results.
 
+
+
+
 ### Part III: Write Up
 
 Once you are satisfied with your model, provide a write up of your data analysis project in a new Rmd file/pdf file: `writeup.Rmd` by copying over salient parts of your R notebook. The written assignment consists of five parts:
 
 1. Exploratory data analysis (20 points): must include three correctly labeled graphs and an explanation that highlight the most important features that went into your model building.
+
 
 2. Development and assessment of an initial model from Part I (10 points)
 
@@ -276,6 +295,8 @@ Once you are satisfied with your model, provide a write up of your data analysis
 * RMSE: must include an RMSE and an explanation  (other criteria desirable)
 
 * Model testing: must include an explanation
+
+
 
 3. Development of the final model (20 points)
 
@@ -297,7 +318,9 @@ Once you are satisfied with your model, provide a write up of your data analysis
 
 * Model testing : must include a discussion
 
-* Model result: must include a selection of the top 10 undervalued and overvalued  houses
+* Model result: must include a selection of the top 10 undervalued and overvalued houses
+
+
 
 5. Conclusion (10 points): must include a summary of results and a discussion of things learned
 
@@ -308,6 +331,8 @@ Create predictions for the validation data from your final model and write out t
 This should have the same format as the models in Part I and II.
 
 10 points
+
+
 
 ### Class Presentations
 
