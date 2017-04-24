@@ -40,30 +40,30 @@ print(miss_prop)
 which(miss_prop>0.5) # four features have greater than 50% of data missing
 
 
-#Created binary variables for whether or not a house as an alley, pool, fence, misc. feature, fireplace, basement or garage, as I thought it may be more meaningful- Tom
-#May consider adding Lot.Frontage back in, as it only had 286 missing
-#Have to decide between filtering out N/A's for different Garage variables and only including 'has.garage'
-#Have to decide between filtering out N/A's for different Basement variables and only including 'has.basement'
-train = ames_train %>%  mutate(has.alley = ifelse(!is.na(Alley), 1, 0)) %>%
-                        mutate(has.pool = ifelse(Pool.Area > 0, 1, 0)) %>%
-                        mutate(has.fence = ifelse(!is.na(Fence), 1, 0)) %>%
-                        mutate(has.shed.or.second.garage = ifelse(!is.na(Misc.Feature), 1, 0)) %>%
-                        mutate(has.fireplace = ifelse(Fireplaces > 0, 1, 0)) %>%
-                        mutate(has.basement = ifelse(!is.na(Bsmt.Qual), 1, 0)) %>%
-                        mutate(has.garage = ifelse(!is.na(Garage.Type), 1, 0)) %>%
-                        #filter(!is.na(Garage.Type))%>% 
-                        filter(!is.na(Mas.Vnr.Area)) %>% 
-                        #filter(!is.na(Bsmt.Qual)) %>% 
-                        #filter(!is.na(Bsmt.Cond)) %>% 
-                        #filter(!is.na(Bsmt.Exposure)) %>% 
-                        #filter(!is.na(BsmtFin.Type.1)) %>% 
-                        #filter(!is.na(BsmtFin.Type.2)) %>% 
-                        #filter(!is.na(Garage.Yr.Blt)) %>% 
-                        #filter(!is.na(Garage.Finish)) %>% 
-                        #filter(!is.na(Garage.Qual)) %>%
-                        #filter(!is.na(Garage.Cond)) %>%
-                        select(-Alley, -Pool.QC, -Fence, -Misc.Feature, -Fireplace.Qu, -Lot.Frontage, -Garage.Type, -Bsmt.Qual, -Bsmt.Cond, -Bsmt.Exposure, -BsmtFin.Type.1, -BsmtFin.Type.2, -Garage.Yr.Blt, -Garage.Finish, -Garage.Qual, -Garage.Cond) %>% filter(!is.na(Bsmt.Full.Bath)) %>%
-  filter(!is.na(Bsmt.Half.Bath))
+#Consider removing Lot.Frontage if not important
+#Need to update this code... not working
+ames_train[is.na("Alley"),"Alley"] <- "None"
+#Need better way to recode these using indicator variables
+ames_train$Exter.Qual = as.integer(as.character(ames_train$Exter.Qual))
+ames_train$Exter.Cond = as.integer(as.character(ames_train$Exter.Cond))
+ames_train$Bsmt.Qual = as.integer(as.character(ames_train$Bsmt.Qual)) - 1
+ames_train$Bsmt.Cond = as.integer(as.character(ames_train$Bsmt.Cond)) - 1
+ames_train$Bsmt.Exposure = as.integer(as.character(ames_train$Bsmt.Exposure)) - 1
+#Heating quality as ordinal
+#Change Electrical to integer
+#Change Kitchen Quality to integer
+#Consider putting Year.Built in age terms
+#Make Fireplace quality an integer
+#Make Fences an integer
+#Integers for all basement, garage, and pool variables
+train = ames_train %>%  filter(!is.na(Bsmt.Full.Bath)) %>%
+                        filter(!is.na(Bsmt.Half.Bath)) %>%
+                        mutate(Baths = Bsmt.Full.Bath + 0.5*Bsmt.Half.Bath + Full.Bath + 0.5*Half.Bath) %>%
+                        mutate(Typical.Functionality = ifelse(Functional == "Typ", 1, 0)) %>%
+                        mutate(ms.subclass = factor(MS.SubClass)) %>%
+                        filter(!is.na(Lot.Frontage)) %>%
+                        filter(!is.na(Mas.Vnr.Area)) %>%
+                        select(-MS.SubClass, -Bsmt.Full.Bath, -Bsmt.Half.Bath, -Full.Bath, -Half.Bath, -Typical.Functionality, -Misc.Feature)
 
 #Finds variables with only one unique observation
 for(p in 1:length(train)) {
@@ -93,7 +93,7 @@ summary(model)
 
 
 ```{r model1}
-model=lm(log(price)~., data=train)
+model=lm(log(price)~ms.subclass + MS.Zoning + log(Lot.Frontage) + log(area) + Street + Alley + Lot.Shape + Land.Contour + Lot.Config + Land.Slope + Neighborhood + Condition.1 + Bldg.Type + House.Style + Overall.Qual + Overall.Cond + Year.Built + Year.Remod.Add + Roof.Style + Exterior.1st + Exterior.2nd + Mas.Vnr.Type + log(Mas.Vnr.Area + 1) + Exter.Qual + Exter.Cond + Foundation + Bsmt.Qual + Bsmt.Cond + Bsmt.Exposure + Heating.QC + Central.Air + Electrical + log(X1st.Flr.SF) + log(X2nd.Flr.SF) + Baths + Bedroom.AbvGr + Kitchen.AbvGr + TotRms.AbvGrd + Paved.Drive + log(Wood.Deck.SF + 1) + log(Open.Porch.SF + 1) + log(Enclosed.Porch + 1) + log(X3Ssn.Porch + 1) + log(Screen.Porch + 1) + log(Misc.Val + 1) + Mo.Sold + Yr.Sold + Sale.Type + log(TotalSq), data=train)
 summary(model)
 
 #Model Selection by AIC
