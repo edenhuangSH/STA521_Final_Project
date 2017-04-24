@@ -40,30 +40,27 @@ print(miss_prop)
 which(miss_prop>0.5) # four features have greater than 50% of data missing
 
 
-#Created binary variables for whether or not a house as an alley, pool, fence, misc. feature, fireplace, basement or garage, as I thought it may be more meaningful- Tom
-#May consider adding Lot.Frontage back in, as it only had 286 missing
-#Have to decide between filtering out N/A's for different Garage variables and only including 'has.garage'
-#Have to decide between filtering out N/A's for different Basement variables and only including 'has.basement'
-train = ames_train %>%  mutate(has.alley = ifelse(!is.na(Alley), 1, 0)) %>%
+#Consider removing Lot.Frontage if not important
+#Need to update this code... not working
+ames_train[is.na("Alley"),"Alley"] <- "None"
+#Need better way to recode these using indicator variables
+ames_train$Exter.Qual = as.integer(as.character(ames_train$Exter.Qual))
+ames_train$Exter.Cond = as.integer(as.character(ames_train$Exter.Cond))
+ames_train$Bsmt.Qual = as.integer(as.character(ames_train$Bsmt.Qual)) - 1
+ames_train$Bsmt.Cond = as.integer(as.character(ames_train$Bsmt.Cond)) - 1
+ames_train$Bsmt.Exposure = as.integer(as.character(ames_train$Bsmt.Exposure)) - 1
+
+#Consider putting Year.Built in age terms
+train = ames_train %>% mutate(ms.subclass = factor(MS.SubClass)) %>%
                         mutate(has.pool = ifelse(Pool.Area > 0, 1, 0)) %>%
                         mutate(has.fence = ifelse(!is.na(Fence), 1, 0)) %>%
                         mutate(has.shed.or.second.garage = ifelse(!is.na(Misc.Feature), 1, 0)) %>%
                         mutate(has.fireplace = ifelse(Fireplaces > 0, 1, 0)) %>%
                         mutate(has.basement = ifelse(!is.na(Bsmt.Qual), 1, 0)) %>%
                         mutate(has.garage = ifelse(!is.na(Garage.Type), 1, 0)) %>%
-                        #filter(!is.na(Garage.Type))%>% 
+                        filter(!is.na(Lot.Frontage)) %>%
                         filter(!is.na(Mas.Vnr.Area)) %>% 
-                        #filter(!is.na(Bsmt.Qual)) %>% 
-                        #filter(!is.na(Bsmt.Cond)) %>% 
-                        #filter(!is.na(Bsmt.Exposure)) %>% 
-                        #filter(!is.na(BsmtFin.Type.1)) %>% 
-                        #filter(!is.na(BsmtFin.Type.2)) %>% 
-                        #filter(!is.na(Garage.Yr.Blt)) %>% 
-                        #filter(!is.na(Garage.Finish)) %>% 
-                        #filter(!is.na(Garage.Qual)) %>%
-                        #filter(!is.na(Garage.Cond)) %>%
-                        select(-Alley, -Pool.QC, -Fence, -Misc.Feature, -Fireplace.Qu, -Lot.Frontage, -Garage.Type, -Bsmt.Qual, -Bsmt.Cond, -Bsmt.Exposure, -BsmtFin.Type.1, -BsmtFin.Type.2, -Garage.Yr.Blt, -Garage.Finish, -Garage.Qual, -Garage.Cond) %>% filter(!is.na(Bsmt.Full.Bath)) %>%
-  filter(!is.na(Bsmt.Half.Bath))
+                        select(-MS.SubClass, -Pool.QC, -Fence, -Misc.Feature)
 
 #Finds variables with only one unique observation
 for(p in 1:length(train)) {
@@ -81,7 +78,7 @@ We are restricting attention to just the "normal sales" condition.
 In the first model you are allowed only limited manipulations of the original data set to predict the sales price `price`. You are allowed to take power transformations of the original variables [square roots, logs, inverses, squares, etc.] but you are NOT allowed to create interaction variables. This means that a variable may only be used once in an equation [if you use $ x^2$ don’t use $x$]. Additionally, you may eliminate any data points you deem unfit. This model should have a minimum r-square of 73% (in the original units) and contain at least 6 variables but fewer than 20.   
 
 ```{r model1}
-model=lm(log(price)~., data=train)
+model=lm(log(price)~ms.subclass + MS.Zoning + log(Lot.Frontage) + log(area) + Street + Alley + Lot.Shape + Land.Contour + Lot.Config + Land.Slope + Neighborhood + Condition.1 + Bldg.Type + House.Style + Overall.Qual + Overall.Cond + Year.Built + Year.Remod.Add + Roof.Style + Exterior.1 + Exterior.2 + Mas.Vnr.Type + log(Mas.Vnr.Area + 1) + Exter.Qual + Exter.Cond + Foundation + Bsmt.Qual + Bsmt.Cond + Bsmt.Exposure, data=train)
 summary(model)
 
 #Model Selection by AIC
