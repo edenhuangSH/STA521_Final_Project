@@ -116,7 +116,6 @@ data <- data  %>%   filter(!is.na(Lot.Frontage)) %>%
 
 
 
-
 # OLD VERSION
 #Consider removing Lot.Frontage if not important
 #ames_train[is.na("Alley"),"Alley"] <- "None"
