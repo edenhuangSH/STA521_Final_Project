@@ -84,7 +84,7 @@ data = ames_train
 
 data <- data  %>%   filter(!is.na(Lot.Frontage)) %>% 
   mutate(Alley =  factor(Alley, levels = levels(addNA(Alley)), labels = c(levels(Alley), "None"), exclude = NULL)) %>%
-  mutate(HouseAge = Yr.Sold- max(Year.Built, Year.Remod.Add))  %>%
+  mutate(HouseAge = Yr.Sold- pmax(Year.Built, Year.Remod.Add))  %>%
   filter(!is.na(Mas.Vnr.Area))  %>% 
   mutate(Bsmt.YN = !is.na(Bsmt.Qual)) %>%
     mutate(Bsmt.Qual =  factor(Bsmt.Qual, levels = levels(addNA(Bsmt.Qual)), labels = c(levels(Bsmt.Qual), "NoBa"), exclude = NULL)) %>%
