@@ -79,6 +79,7 @@ For variable “functional”, we recoded different ordinal levels into binary l
 
 We summed up the number of bathrooms to one continuous variable. Note that one half-bathroom would be coded as 0.5.	
 ```{r}
+
 data = ames_train
 
 data <- data  %>%   filter(!is.na(Lot.Frontage)) %>% 
@@ -108,7 +109,8 @@ data <- data  %>%   filter(!is.na(Lot.Frontage)) %>%
     mutate(Fence =  factor(Fence, levels = levels(addNA(Fence)), labels = c(levels(Fence), "None"), exclude = NULL)) %>%
   mutate(Misc.Feature =  factor(Misc.Feature, levels = levels(addNA(Misc.Feature)), labels = c(levels(Misc.Feature), "None"), exclude = NULL)) %>%
   mutate(Mo.Sold = as.factor(Mo.Sold)) %>%
-    mutate(Yr.Sold = as.factor(Yr.Sold))
+    mutate(Yr.Sold = as.factor(Yr.Sold)) %>%
+  dplyr::select(-Garage.Yr.Blt)
 
 
 
