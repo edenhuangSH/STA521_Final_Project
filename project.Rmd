@@ -26,9 +26,10 @@ and update accordingly rather than editing this.
 
 ### Read in Training Data
 
-To get started read in the training data:
+To get started read in the training data. 
 ```{r read-data}
 library(dplyr)
+library(tidyr)
 load("ames_train.Rdata")
 
 print(paste0("The dataset has ", dim(ames_train)[1], " number of observations and ", dim(ames_train)[2], " features"))
@@ -37,18 +38,53 @@ print(paste0("The dataset has ", dim(ames_train)[1], " number of observations an
 miss = apply(is.na(ames_train), 2, sum)
 miss_prop = round(miss[miss>0]/nrow(ames_train), 3)
 print(miss_prop) 
-which(miss_prop>0.5) # four features have greater than 50% of data missing
+which(miss_prop>0.5) # four features have greater than 50% of data "missing" -- drop these variables
+```
 
 
+Notes about data cleaning:
+
+We dropped “utilities” (type of utilities available) since in the training set, only 2 observations did not have all the utilities (electricity, gas, water and sewage). Intuitively, most modern property are equipped with these basic public utilities and keeping the variable would therefore be unnecessary. 
+
+We also dropped “condition 2” (proximity to various conditions if more than one is present) since it seemed redundant from our training set. Given Condition 1, only 12 properties were not close to normal conditions. 
+
+In the original scale, 1990 and 1900 would not be much different. Therefore, we changed the scale to the number of years since last construction or remodelling, subtracted from year 2010 (the end year in the dataset). 
+
+Another variable dropped in our model was “roof material” since only 1% of the property used material other than “standard composite shingle”. Similarly, “heating” was also dropped since more than 95% of the property has gas forced warm air furnace (GasA) instead of other types of heating.
+
+For “exterior quality” and “exterior condition”	, we recoded these ordinal variables to 1-5 to replace the original scale of conditions (from poor to excellent). Similarly, we recoded “basement exposure” and “basement rating” except that the new scale would start from 0 for properties without basement. 
+												
+Exter Qual (Ordinal): Evaluates the quality of the material on the exterior
+
+
+						
+      Ex       Excellent
+       Gd       Good
+       TA       Average/Typical
+       Fa       Fair
+       Po       Poor
+
+
+						
+Exter Cond (Ordinal): Evaluates the present condition of the material on the exterior
+
+
+						
+      Ex       Excellent
+       Gd       Good
+       TA       Average/Typical
+       Fa       Fair
+       Po       Poor
+
+
+Continuous variables such as “1st floor square feet” and “2nd floor square feet” were log-transformed for interpretation purpose. 
+
+For variable “functional”, we recoded different ordinal levels into binary levels --- typical functionality or not, including minor and major deductions.  		
+
+We summed up the number of bathrooms to one continuous variable. Note that one half-bathroom would be coded as 0.5.	
+```{r}
 #Consider removing Lot.Frontage if not important
-#Need to update this code... not working
 ames_train[is.na("Alley"),"Alley"] <- "None"
-#Need better way to recode these using indicator variables
-ames_train$Exter.Qual = as.integer(as.character(ames_train$Exter.Qual))
-ames_train$Exter.Cond = as.integer(as.character(ames_train$Exter.Cond))
-ames_train$Bsmt.Qual = as.integer(as.character(ames_train$Bsmt.Qual)) - 1
-ames_train$Bsmt.Cond = as.integer(as.character(ames_train$Bsmt.Cond)) - 1
-ames_train$Bsmt.Exposure = as.integer(as.character(ames_train$Bsmt.Exposure)) - 1
 #Heating quality as ordinal
 #Change Electrical to integer
 #Change Kitchen Quality to integer
@@ -56,20 +92,26 @@ ames_train$Bsmt.Exposure = as.integer(as.character(ames_train$Bsmt.Exposure)) - 
 #Make Fireplace quality an integer
 #Make Fences an integer
 #Integers for all basement, garage, and pool variables
-train = ames_train %>%  filter(!is.na(Bsmt.Full.Bath)) %>%
+recode_factor(ames_train$Exter.Qual, `Po` = "1", `Fa` = "2", `TA` = "3", `Gd` = "4", `Ex` = "5") 
+recode_factor(ames_train$Exter.Cond, `Po` = "1", `Fa` = "2", `TA` = "3", `Gd` = "4", `Ex` = "5") 
+recode_factor(ames_train$Bsmt.Qual, `NoBasement` = "NA", `Po` = "1", `Fa` = "2", `TA` = "3", `Gd` = "4", `Ex` = "5") 
+recode_factor(ames_train$Bsmt.Cond, `NoBasement` = "NA", `Po` = "1", `Fa` = "2", `TA` = "3", `Gd` = "4", `Ex` = "5") 
+recode_factor(ames_train$Bsmt.Exposure, `NoBasement` = "NA", `NoExposure` = "0", `Mn` = "1", `Av` = "2", `Gd` = "3") 
+                          
+var_drop = c("Alley", "MS.SubClass", "Bsmt.Full.Bath", "Bsmt.Half.Bath", "Full.Bath", "Half.Bath", "Misc.Feature", "Pool.QC", "Fence")
+train = ames_train %>%   filter(!is.na(Bsmt.Full.Bath)) %>%
                         filter(!is.na(Bsmt.Half.Bath)) %>%
                         mutate(Baths = Bsmt.Full.Bath + 0.5*Bsmt.Half.Bath + Full.Bath + 0.5*Half.Bath) %>%
                         mutate(Typical.Functionality = ifelse(Functional == "Typ", 1, 0)) %>%
                         mutate(ms.subclass = factor(MS.SubClass)) %>%
                         filter(!is.na(Lot.Frontage)) %>%
-                        filter(!is.na(Mas.Vnr.Area)) %>%
-                        select(-MS.SubClass, -Bsmt.Full.Bath, -Bsmt.Half.Bath, -Full.Bath, -Half.Bath, -Typical.Functionality, -Misc.Feature)
-
-#Finds variables with only one unique observation
-for(p in 1:length(train)) {
-  entries = unique(train[,p])
-  if (nrow(entries) == 1) print(entries)
-}
+                        filter(!is.na(Mas.Vnr.Area)) 
+train = train[ , !names(train) %in% var_drop]
+# #Finds variables with only one unique observation
+# for(p in 1:length(train)) {
+#   entries = unique(train[,p])
+#   if (nrow(entries) == 1) print(entries)
+# }
 ```
 
 The `Neighborhood` variable, typically of little interest other than to model the location effect, may be of more relevance when used with the [map](http://www.amstat.org/publications/jse/v19n3/decock/AmesResidential.pdf).
