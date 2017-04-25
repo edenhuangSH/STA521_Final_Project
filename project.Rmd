@@ -107,6 +107,9 @@ train = ames_train %>%   filter(!is.na(Bsmt.Full.Bath)) %>%
                         filter(!is.na(Lot.Frontage)) %>%
                         filter(!is.na(Mas.Vnr.Area)) 
 train = train[ , !names(train) %in% var_drop]
+
+miss = apply(is.na(train), 2, sum)
+which(miss>0)
 # #Finds variables with only one unique observation
 # for(p in 1:length(train)) {
 #   entries = unique(train[,p])
