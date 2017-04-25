@@ -102,6 +102,8 @@ data <- data  %>%   filter(!is.na(Lot.Frontage)) %>%
   mutate(Garage.YN = !is.na(Garage.Cond)) %>%
     mutate(Garage.Type =  factor(Garage.Type, levels = levels(addNA(Garage.Type)), labels = c(levels(Garage.Type), "None"), exclude = NULL)) %>%
   mutate(Garage.Finish =  factor(Garage.Finish, levels = levels(addNA(Garage.Finish)), labels = c(levels(Garage.Finish), "None"), exclude = NULL)) %>%
+    mutate(Garage.Qual =  factor(Garage.Qual, levels = levels(addNA(Garage.Qual)), labels = c(levels(Garage.Qual), "None"), exclude = NULL)) %>%
+      mutate(Garage.Cond =  factor(Garage.Cond, levels = levels(addNA(Garage.Cond)), labels = c(levels(Garage.Cond), "None"), exclude = NULL)) %>%
   mutate(Porch.Area = Wood.Deck.SF+ Open.Porch.SF+Enclosed.Porch+X3Ssn.Porch + Screen.Porch) %>%
   mutate(Pool.YN = Pool.Area>0) %>%
   mutate(Pool.QC =  factor(Pool.QC, levels = levels(addNA(Pool.QC)), labels = c(levels(Pool.QC), "None"), exclude = NULL)) %>%
