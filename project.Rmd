@@ -55,8 +55,6 @@ Another variable dropped in our model was “roof material” since only 1% of t
 For “exterior quality” and “exterior condition”	, we recoded these ordinal variables to 1-5 to replace the original scale of conditions (from poor to excellent). Similarly, we recoded “basement exposure” and “basement rating” except that the new scale would start from 0 for properties without basement. 
 												
 Exter Qual (Ordinal): Evaluates the quality of the material on the exterior
-
-
 						
       Ex       Excellent
        Gd       Good
@@ -68,8 +66,6 @@ Exter Qual (Ordinal): Evaluates the quality of the material on the exterior
 						
 Exter Cond (Ordinal): Evaluates the present condition of the material on the exterior
 
-
-						
       Ex       Excellent
        Gd       Good
        TA       Average/Typical
