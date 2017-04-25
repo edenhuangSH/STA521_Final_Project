@@ -111,7 +111,7 @@ data <- data  %>%   filter(!is.na(Lot.Frontage)) %>%
   mutate(Mo.Sold = as.factor(Mo.Sold)) %>%
     mutate(Yr.Sold = as.factor(Yr.Sold)) %>%
   select(-Garage.Yr.Blt)
-  
+
 
 
 
