@@ -61,8 +61,45 @@ For variable “functional”, we recoded different ordinal levels into binary l
 
 We summed up the number of bathrooms to one continuous variable. Note that one half-bathroom would be coded as 0.5.	
 ```{r}
+
+
+data = ames_train
+
+data <- data  %>%   filter(!is.na(Lot.Frontage)) %>% 
+  mutate(Alley =  factor(Alley, levels = levels(addNA(Alley)), labels = c(levels(Alley), "None"), exclude = NULL)) %>%
+  mutate(HouseAge = Yr.Sold- max(Year.Built, Year.Remod.Add))  %>%
+  filter(!is.na(Mas.Vnr.Area))  %>% 
+  mutate(Bsmt.YN = !is.na(Bsmt.Qual)) %>%
+    mutate(Bsmt.Qual =  factor(Bsmt.Qual, levels = levels(addNA(Bsmt.Qual)), labels = c(levels(Bsmt.Qual), "NoBa"), exclude = NULL)) %>%
+    mutate(Bsmt.Cond =  factor(Bsmt.Cond, levels = levels(addNA(Bsmt.Cond)), labels = c(levels(Bsmt.Cond), "NoBa"), exclude = NULL)) %>%
+    mutate(Bsmt.Exposure =  factor(Bsmt.Exposure, levels = levels(addNA(Bsmt.Exposure)), labels = c(levels(Bsmt.Exposure), "NoBa"), exclude = NULL)) %>%
+   mutate(BsmtFin.Type.1=  factor(BsmtFin.Type.1, levels = levels(addNA(BsmtFin.Type.1)), labels = c(levels(BsmtFin.Type.1), "NoBa"), exclude = NULL)) %>%
+    mutate(BsmtFin.Type.2=  factor(BsmtFin.Type.2, levels = levels(addNA(BsmtFin.Type.2)), labels = c(levels(BsmtFin.Type.2), "NoBa"), exclude = NULL)) %>%
+  mutate(X12.SF= X1st.Flr.SF+ X2nd.Flr.SF)  %>%   
+  filter(!is.na(Bsmt.Full.Bath)) %>%
+  filter(!is.na(Bsmt.Half.Bath)) %>%
+  mutate(Baths = Bsmt.Full.Bath + 0.5*Bsmt.Half.Bath + Full.Bath + 0.5*Half.Bath) %>%
+  mutate(Fireplace.YN = Fireplaces>0) %>%
+  mutate(Fireplace.Qu =  factor(Fireplace.Qu, levels = levels(addNA(Fireplace.Qu)), labels = c(levels(Fireplace.Qu), "None"), exclude = NULL)) %>%
+  mutate(Garage.YN = !is.na(Garage.Cond)) %>%
+    mutate(Garage.Type =  factor(Garage.Type, levels = levels(addNA(Garage.Type)), labels = c(levels(Garage.Type), "None"), exclude = NULL)) %>%
+  mutate(Garage.Finish =  factor(Garage.Finish, levels = levels(addNA(Garage.Finish)), labels = c(levels(Garage.Finish), "None"), exclude = NULL)) %>%
+  mutate(Porch.Area = Wood.Deck.SF+ Open.Porch.SF+Enclosed.Porch+X3Ssn.Porch + Screen.Porch) %>%
+  mutate(Pool.YN = Pool.Area>0) %>%
+  mutate(Pool.QC =  factor(Pool.QC, levels = levels(addNA(Pool.QC)), labels = c(levels(Pool.QC), "None"), exclude = NULL)) %>%
+    mutate(Fence =  factor(Fence, levels = levels(addNA(Fence)), labels = c(levels(Fence), "None"), exclude = NULL)) %>%
+  mutate(Misc.Feature =  factor(Misc.Feature, levels = levels(addNA(Misc.Feature)), labels = c(levels(Misc.Feature), "None"), exclude = NULL)) %>%
+  mutate(Mo.Sold = as.factor(Mo.Sold)) %>%
+    mutate(Yr.Sold = as.factor(Yr.Sold))
+  
+
+
+
+
+
+# OLD VERSION
 #Consider removing Lot.Frontage if not important
-ames_train[is.na("Alley"),"Alley"] <- "None"
+#ames_train[is.na("Alley"),"Alley"] <- "None"
 #Heating quality as ordinal
 #Change Electrical to integer
 #Change Kitchen Quality to integer
@@ -71,29 +108,40 @@ ames_train[is.na("Alley"),"Alley"] <- "None"
 #Make Fences an integer
 #Integers for all basement, garage, and pool variables
 
-recode_factor(ames_train$Exter.Qual, `Po` = "1", `Fa` = "2", `TA` = "3", `Gd` = "4", `Ex` = "5") 
-recode_factor(ames_train$Exter.Cond, `Po` = "1", `Fa` = "2", `TA` = "3", `Gd` = "4", `Ex` = "5") 
-recode_factor(ames_train$Bsmt.Qual, `NoBasement` = "NA", `Po` = "1", `Fa` = "2", `TA` = "3", `Gd` = "4", `Ex` = "5") 
-recode_factor(ames_train$Bsmt.Cond, `NoBasement` = "NA", `Po` = "1", `Fa` = "2", `TA` = "3", `Gd` = "4", `Ex` = "5") 
-recode_factor(ames_train$Bsmt.Exposure, `NoBasement` = "NA", `NoExposure` = "0", `Mn` = "1", `Av` = "2", `Gd` = "3") 
-                          
-var_drop = c("Alley", "MS.SubClass", "Bsmt.Full.Bath", "Bsmt.Half.Bath", "Full.Bath", "Half.Bath", "Misc.Feature", "Pool.QC", "Fence")
-train = ames_train %>%  filter(!is.na(Bsmt.Full.Bath)) %>%
-                        filter(!is.na(Bsmt.Half.Bath)) %>%
-                        mutate(Baths = Bsmt.Full.Bath + 0.5*Bsmt.Half.Bath + Full.Bath + 0.5*Half.Bath) %>%
-                        mutate(Typical.Functionality = ifelse(Functional == "Typ", 1, 0)) %>%
-                        mutate(ms.subclass = factor(MS.SubClass)) %>%
-                        filter(!is.na(Lot.Frontage)) %>%
-                        filter(!is.na(Mas.Vnr.Area)) 
-train = train[ , !names(train) %in% var_drop]
+# recode_factor(ames_train$Exter.Qual, `Po` = "1", `Fa` = "2", `TA` = "3", `Gd` = "4", `Ex` = "5") 
+# recode_factor(ames_train$Exter.Cond, `Po` = "1", `Fa` = "2", `TA` = "3", `Gd` = "4", `Ex` = "5") 
+# recode_factor(ames_train$Bsmt.Qual, `NoBasement` = "NA", `Po` = "1", `Fa` = "2", `TA` = "3", `Gd` = "4", `Ex` = "5") 
+# recode_factor(ames_train$Bsmt.Cond, `NoBasement` = "NA", `Po` = "1", `Fa` = "2", `TA` = "3", `Gd` = "4", `Ex` = "5") 
+# recode_factor(ames_train$Bsmt.Exposure, `NoBasement` = "NA", `NoExposure` = "0", `Mn` = "1", `Av` = "2", `Gd` = "3") 
+#                           
+# var_drop = c("Alley", "MS.SubClass", "Bsmt.Full.Bath", "Bsmt.Half.Bath", "Full.Bath", "Half.Bath", "Misc.Feature", "Pool.QC", "Fence")
+# train = ames_train %>%  filter(!is.na(Bsmt.Full.Bath)) %>%
+#                         filter(!is.na(Bsmt.Half.Bath)) %>%
+#                         mutate(Baths = Bsmt.Full.Bath + 0.5*Bsmt.Half.Bath + Full.Bath + 0.5*Half.Bath) %>%
+#                         mutate(Typical.Functionality = ifelse(Functional == "Typ", 1, 0)) %>%
+#                         mutate(ms.subclass = factor(MS.SubClass)) %>%
+#                         filter(!is.na(Lot.Frontage)) %>%
+#                         filter(!is.na(Mas.Vnr.Area)) 
+# train = train[ , !names(train) %in% var_drop]
+# 
+# miss = apply(is.na(train), 2, sum)
+# which(miss>0)
 
-miss = apply(is.na(train), 2, sum)
-which(miss>0)
-# #Finds variables with only one unique observation
-# for(p in 1:length(train)) {
-#   entries = unique(train[,p])
-#   if (nrow(entries) == 1) print(entries)
-# }
+# recode_factor(ames_train$Exter.Qual, `Po` = "1", `Fa` = "2", `TA` = "3", `Gd` = "4", `Ex` = "5") 
+# recode_factor(ames_train$Exter.Cond, `Po` = "1", `Fa` = "2", `TA` = "3", `Gd` = "4", `Ex` = "5") 
+# recode_factor(ames_train$Bsmt.Qual, `NoBasement` = "NA", `Po` = "1", `Fa` = "2", `TA` = "3", `Gd` = "4", `Ex` = "5") 
+# recode_factor(ames_train$Bsmt.Cond, `NoBasement` = "NA", `Po` = "1", `Fa` = "2", `TA` = "3", `Gd` = "4", `Ex` = "5") 
+# recode_factor(ames_train$Bsmt.Exposure, `NoBasement` = "NA", `NoExposure` = "0", `Mn` = "1", `Av` = "2", `Gd` = "3") 
+#                           
+# var_drop = c("Alley", "MS.SubClass", "Bsmt.Full.Bath", "Bsmt.Half.Bath", "Full.Bath", "Half.Bath", "Misc.Feature", "Pool.QC", "Fence")
+# train = ames_train %>%   filter(!is.na(Bsmt.Full.Bath)) %>%
+#                         filter(!is.na(Bsmt.Half.Bath)) %>%
+#                         mutate(Baths = Bsmt.Full.Bath + 0.5*Bsmt.Half.Bath + Full.Bath + 0.5*Half.Bath) %>%
+#                         mutate(Typical.Functionality = ifelse(Functional == "Typ", 1, 0)) %>%
+#                         mutate(ms.subclass = factor(MS.SubClass)) %>%
+#                         filter(!is.na(Lot.Frontage)) %>%
+#                         filter(!is.na(Mas.Vnr.Area)) 
+# train = train[ , !names(train) %in% var_drop]
 ```
 
 The `Neighborhood` variable, typically of little interest other than to model the location effect, may be of more relevance when used with the [map](http://www.amstat.org/publications/jse/v19n3/decock/AmesResidential.pdf).
@@ -117,7 +165,15 @@ summary(model)
 
 
 ```{r model1}
-model=lm(log(price)~ms.subclass + MS.Zoning + log(Lot.Frontage) + log(area) + Street + Alley + Lot.Shape + Land.Contour + Lot.Config + Land.Slope + Neighborhood + Condition.1 + Bldg.Type + House.Style + Overall.Qual + Overall.Cond + Year.Built + Year.Remod.Add + Roof.Style + Exterior.1st + Exterior.2nd + Mas.Vnr.Type + log(Mas.Vnr.Area + 1) + Exter.Qual + Exter.Cond + Foundation + Bsmt.Qual + Bsmt.Cond + Bsmt.Exposure + Heating.QC + Central.Air + Electrical + log(X1st.Flr.SF) + log(X2nd.Flr.SF) + Baths + Bedroom.AbvGr + Kitchen.AbvGr + TotRms.AbvGrd + Paved.Drive + log(Wood.Deck.SF + 1) + log(Open.Porch.SF + 1) + log(Enclosed.Porch + 1) + log(X3Ssn.Porch + 1) + log(Screen.Porch + 1) + log(Misc.Val + 1) + Mo.Sold + Yr.Sold + Sale.Type + log(TotalSq), data=train)
+
+
+
+model=lm(log(price) ~ MS.SubClass + MS.Zoning + log(Lot.Frontage) + log(Lot.Area) +  Street + Alley + Lot.Shape + Land.Contour + Lot.Config + Land.Slope + Neighborhood + Condition.1 + Condition.2 + Bldg.Type + House.Style + Overall.Qual + Overall.Cond + HouseAge +   Roof.Style + Roof.Matl + Exterior.1st + Exterior.2nd + Mas.Vnr.Type + log(1+Mas.Vnr.Area) + Exter.Cond + Exter.Cond +   Foundation + Bsmt.YN:Bsmt.Qual + Bsmt.YN:Bsmt.Cond + Bsmt.YN:Bsmt.Exposure + Total.Bsmt.SFn + Heating + Heating.QC + Central.Air + Electrical + log(X12.SF) + log(1+Low.Qual.Fin.SF) + Baths + Bedroom.AbvG + Kitchen.AbvGr + Kitchen.Qual + Functional + Fireplaces + Fireplace.YN:Fireplace.Qu + Garage.YN:Garage.Type + Garage.YN:Garage.Finish + Garage.Cars + Garage.YN:Garage.Cond + Garage.YN:Garage.Qual + Paved.Drive + log(1+Pool.Area) + Pool.YN:Pool.QC + Fence + Misc.Val + Mo.Sold  +Yr.Sold + Sale.Type  + TotalSq, data=train)
+
+
+
+# OLD
+# model=lm(log(price)~ms.subclass + MS.Zoning + log(Lot.Frontage) + log(area) + Street + Alley + Lot.Shape + Land.Contour + Lot.Config + Land.Slope + Neighborhood + Condition.1 + Bldg.Type + House.Style + Overall.Qual + Overall.Cond + Year.Built + Year.Remod.Add + Roof.Style + Exterior.1st + Exterior.2nd + Mas.Vnr.Type + log(Mas.Vnr.Area + 1) + Exter.Qual + Exter.Cond + Foundation + Bsmt.Qual + Bsmt.Cond + Bsmt.Exposure + Heating.QC + Central.Air + Electrical + log(X1st.Flr.SF) + log(X2nd.Flr.SF) + Baths + Bedroom.AbvGr + Kitchen.AbvGr + TotRms.AbvGrd + Paved.Drive + log(Wood.Deck.SF + 1) + log(Open.Porch.SF + 1) + log(Enclosed.Porch + 1) + log(X3Ssn.Porch + 1) + log(Screen.Porch + 1) + log(Misc.Val + 1) + Mo.Sold + Yr.Sold + Sale.Type + log(TotalSq), data=train)
 vif(model)
 summary(model)
 
