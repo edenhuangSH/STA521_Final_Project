@@ -53,24 +53,6 @@ In the original scale, 1990 and 1900 would not be much different. Therefore, we 
 Another variable dropped in our model was “roof material” since only 1% of the property used material other than “standard composite shingle”. Similarly, “heating” was also dropped since more than 95% of the property has gas forced warm air furnace (GasA) instead of other types of heating.
 
 For “exterior quality” and “exterior condition”	, we recoded these ordinal variables to 1-5 to replace the original scale of conditions (from poor to excellent). Similarly, we recoded “basement exposure” and “basement rating” except that the new scale would start from 0 for properties without basement. 
-												
-Exter Qual (Ordinal): Evaluates the quality of the material on the exterior
-						
-      Ex       Excellent
-       Gd       Good
-       TA       Average/Typical
-       Fa       Fair
-       Po       Poor
-
-
-						
-Exter Cond (Ordinal): Evaluates the present condition of the material on the exterior
-
-      Ex       Excellent
-       Gd       Good
-       TA       Average/Typical
-       Fa       Fair
-       Po       Poor
 
 
 Continuous variables such as “1st floor square feet” and “2nd floor square feet” were log-transformed for interpretation purpose. 
@@ -88,6 +70,7 @@ ames_train[is.na("Alley"),"Alley"] <- "None"
 #Make Fireplace quality an integer
 #Make Fences an integer
 #Integers for all basement, garage, and pool variables
+
 recode_factor(ames_train$Exter.Qual, `Po` = "1", `Fa` = "2", `TA` = "3", `Gd` = "4", `Ex` = "5") 
 recode_factor(ames_train$Exter.Cond, `Po` = "1", `Fa` = "2", `TA` = "3", `Gd` = "4", `Ex` = "5") 
 recode_factor(ames_train$Bsmt.Qual, `NoBasement` = "NA", `Po` = "1", `Fa` = "2", `TA` = "3", `Gd` = "4", `Ex` = "5") 
@@ -95,7 +78,7 @@ recode_factor(ames_train$Bsmt.Cond, `NoBasement` = "NA", `Po` = "1", `Fa` = "2",
 recode_factor(ames_train$Bsmt.Exposure, `NoBasement` = "NA", `NoExposure` = "0", `Mn` = "1", `Av` = "2", `Gd` = "3") 
                           
 var_drop = c("Alley", "MS.SubClass", "Bsmt.Full.Bath", "Bsmt.Half.Bath", "Full.Bath", "Half.Bath", "Misc.Feature", "Pool.QC", "Fence")
-train = ames_train %>%   filter(!is.na(Bsmt.Full.Bath)) %>%
+train = ames_train %>%  filter(!is.na(Bsmt.Full.Bath)) %>%
                         filter(!is.na(Bsmt.Half.Bath)) %>%
                         mutate(Baths = Bsmt.Full.Bath + 0.5*Bsmt.Half.Bath + Full.Bath + 0.5*Half.Bath) %>%
                         mutate(Typical.Functionality = ifelse(Functional == "Typ", 1, 0)) %>%
