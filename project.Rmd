@@ -61,13 +61,11 @@ For variable “functional”, we recoded different ordinal levels into binary l
 
 We summed up the number of bathrooms to one continuous variable. Note that one half-bathroom would be coded as 0.5.	
 ```{r}
-
-
 data = ames_train
 
 data <- data  %>%   filter(!is.na(Lot.Frontage)) %>% 
   mutate(Alley =  factor(Alley, levels = levels(addNA(Alley)), labels = c(levels(Alley), "None"), exclude = NULL)) %>%
-  mutate(HouseAge = Yr.Sold- max(Year.Built, Year.Remod.Add))  %>%
+  mutate(HouseAge = Yr.Sold- pmax(Year.Built, Year.Remod.Add))  %>%
   filter(!is.na(Mas.Vnr.Area))  %>% 
   mutate(Bsmt.YN = !is.na(Bsmt.Qual)) %>%
     mutate(Bsmt.Qual =  factor(Bsmt.Qual, levels = levels(addNA(Bsmt.Qual)), labels = c(levels(Bsmt.Qual), "NoBa"), exclude = NULL)) %>%
@@ -158,24 +156,20 @@ In the first model you are allowed only limited manipulations of the original da
 
 ```{r}
 library(MASS)
-model=lm(price~., data=train)
+model=lm(price~., data=data)
 boxcox(model)
 
-model=lm(log(price)~., data=train)
+model=lm(log(price)~., data=data)
 summary(model)
 ```
 
 
 ```{r model1}
-
-
-
-model=lm(log(price) ~ MS.SubClass + MS.Zoning + log(Lot.Frontage) + log(Lot.Area) +  Street + Alley + Lot.Shape + Land.Contour + Lot.Config + Land.Slope + Neighborhood + Condition.1 + Condition.2 + Bldg.Type + House.Style + Overall.Qual + Overall.Cond + HouseAge +   Roof.Style + Roof.Matl + Exterior.1st + Exterior.2nd + Mas.Vnr.Type + log(1+Mas.Vnr.Area) + Exter.Cond + Exter.Cond +   Foundation + Bsmt.YN:Bsmt.Qual + Bsmt.YN:Bsmt.Cond + Bsmt.YN:Bsmt.Exposure + Total.Bsmt.SFn + Heating + Heating.QC + Central.Air + Electrical + log(X12.SF) + log(1+Low.Qual.Fin.SF) + Baths + Bedroom.AbvG + Kitchen.AbvGr + Kitchen.Qual + Functional + Fireplaces + Fireplace.YN:Fireplace.Qu + Garage.YN:Garage.Type + Garage.YN:Garage.Finish + Garage.Cars + Garage.YN:Garage.Cond + Garage.YN:Garage.Qual + Paved.Drive + log(1+Pool.Area) + Pool.YN:Pool.QC + Fence + Misc.Val + Mo.Sold  +Yr.Sold + Sale.Type  + TotalSq, data=train)
-
-
+model = lm(log(price) ~ MS.SubClass + MS.Zoning + log(Lot.Frontage) + log(Lot.Area) +  Street + Alley + Lot.Shape + Land.Contour + Lot.Config + Land.Slope + Neighborhood + Condition.1 + Bldg.Type + House.Style + Overall.Qual + Overall.Cond + HouseAge + Roof.Style + Roof.Matl + Exterior.1st + Exterior.2nd + Mas.Vnr.Type + log(1+Mas.Vnr.Area) + Exter.Cond + Exter.Cond + Foundation + Bsmt.YN:Bsmt.Qual + Bsmt.YN:Bsmt.Cond + Bsmt.YN:Bsmt.Exposure + Total.Bsmt.SF + Heating + Heating.QC + Central.Air + Electrical + log(X12.SF) + log(1+Low.Qual.Fin.SF) + Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + Fireplaces + Fireplace.YN:Fireplace.Qu + Garage.YN:Garage.Type + Garage.YN:Garage.Finish + Garage.Cars + Garage.YN:Garage.Cond + Garage.YN:Garage.Qual + Paved.Drive + log(1+Pool.Area) + Pool.YN:Pool.QC + Fence + Misc.Val + Mo.Sold  +Yr.Sold + Sale.Type + TotalSq, data=data)
 
 # OLD
 # model=lm(log(price)~ms.subclass + MS.Zoning + log(Lot.Frontage) + log(area) + Street + Alley + Lot.Shape + Land.Contour + Lot.Config + Land.Slope + Neighborhood + Condition.1 + Bldg.Type + House.Style + Overall.Qual + Overall.Cond + Year.Built + Year.Remod.Add + Roof.Style + Exterior.1st + Exterior.2nd + Mas.Vnr.Type + log(Mas.Vnr.Area + 1) + Exter.Qual + Exter.Cond + Foundation + Bsmt.Qual + Bsmt.Cond + Bsmt.Exposure + Heating.QC + Central.Air + Electrical + log(X1st.Flr.SF) + log(X2nd.Flr.SF) + Baths + Bedroom.AbvGr + Kitchen.AbvGr + TotRms.AbvGrd + Paved.Drive + log(Wood.Deck.SF + 1) + log(Open.Porch.SF + 1) + log(Enclosed.Porch + 1) + log(X3Ssn.Porch + 1) + log(Screen.Porch + 1) + log(Misc.Val + 1) + Mo.Sold + Yr.Sold + Sale.Type + log(TotalSq), data=train)
+library(car)
 vif(model)
 summary(model)
 
@@ -192,27 +186,33 @@ AIC_model = lm(formula = log(price) ~ PID + area + MS.SubClass + MS.Zoning +
     Wood.Deck.SF + Open.Porch.SF + Enclosed.Porch + Screen.Porch + 
     Mo.Sold + Yr.Sold + has.fence + has.fireplace, data = train)
 summary(AIC_model)
+```
 
+
+```{r}
 #Model Selection by BIC
-step(model, k=log(nrow(train)))
-BIC_model = lm(formula = log(price) ~ PID + area + MS.Zoning + Lot.Area + 
-    Neighborhood + Condition.1 + Bldg.Type + Overall.Qual + Overall.Cond + 
-    Year.Built + Year.Remod.Add + BsmtFin.SF.1 + BsmtFin.SF.2 + 
-    Bsmt.Unf.SF + Central.Air + Bsmt.Full.Bath + Kitchen.Qual + 
-    Functional + Garage.Cars + Garage.Area + Open.Porch.SF + 
-    Enclosed.Porch + Screen.Porch + has.fireplace, data = train)
+step(model, k=log(nrow(data)))
+BIC_model = lm(log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 + 
+    Overall.Qual + Overall.Cond + HouseAge + Foundation + Total.Bsmt.SF + 
+    Central.Air + log(X12.SF) + Baths + Kitchen.AbvGr + Kitchen.Qual + 
+    Functional + Fireplaces + Garage.Cars + Paved.Drive + Bsmt.YN:Bsmt.Exposure, 
+    data = data)
 summary(BIC_model)
+```
 
+
+
+```{r}
 #Use Boosting to find important variables
-
 library(gbm)
 
-boost = gbm(log(price) ~ PID + area + MS.Zoning + Lot.Area + 
-    Neighborhood + Condition.1 + Bldg.Type + Overall.Qual + Overall.Cond + 
-    Year.Built + Year.Remod.Add + BsmtFin.SF.1 + BsmtFin.SF.2 + 
-    Bsmt.Unf.SF + Central.Air + Bsmt.Full.Bath + Kitchen.Qual + 
-    Functional + Garage.Cars + Garage.Area + Open.Porch.SF + 
-    Enclosed.Porch + Screen.Porch + has.fireplace, data = train, distribution="gaussian", n.trees=5000, interaction.depth = 1, shrinkage=0.01, verbose = F)
+
+
+
+Bsmt.YN:Bsmt.Qual + Bsmt.YN:Bsmt.Cond + Bsmt.YN:Bsmt.Exposure + 
+
+boost = gbm(lm(log(price) ~ MS.SubClass + MS.Zoning + log(Lot.Frontage) + log(Lot.Area) +  Street + Alley + Lot.Shape + Land.Contour + Lot.Config + Land.Slope + Neighborhood + Condition.1 + Bldg.Type + House.Style + Overall.Qual + Overall.Cond + HouseAge + Roof.Style + Roof.Matl + Exterior.1st + Exterior.2nd + Mas.Vnr.Type + log(1+Mas.Vnr.Area) + Exter.Cond + Exter.Cond + Foundation + Bsmt.YN:Bsmt.Qual + Bsmt.YN:Bsmt.Cond + Bsmt.YN:Bsmt.Exposure + Total.Bsmt.SF + Heating + Heating.QC + Central.Air + Electrical + log(X12.SF) + log(1+Low.Qual.Fin.SF) + Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + Fireplaces + Fireplace.YN:Fireplace.Qu + Garage.YN:Garage.Type + Garage.YN:Garage.Finish + Garage.Cars + Garage.YN:Garage.Cond + Garage.YN:Garage.Qual + Paved.Drive + log(1+Pool.Area) + Pool.YN:Pool.QC + Fence + Misc.Val + Mo.Sold  +Yr.Sold + Sale.Type + TotalSq, data=data), 
+            data = data, distribution="gaussian", n.trees=5000, interaction.depth = 1, shrinkage=0.01, verbose = F)
 
 summary(boost)
 
