@@ -230,6 +230,37 @@ model.BIC=lm(formula = log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 +
                Fireplaces + Garage.Cars + Paved.Drive + log(Pool.Area) + 
                log(TotalSq), data = data_train)
 
+modelinteract = lm(log(price) ~ log(Lot.Area) + Condition.1 + Overall.Qual:Baths:Neighborhood + Overall.Qual:Baths + Overall.Qual:Neighborhood + Overall.Qual + Baths + Neighborhood + Overall.Qual:Baths:log(Total.Bsmt.SF) + Overall.Qual:log(Total.Bsmt.SF) + Overall.Qual:Garage.Cars:log(Total.Bsmt.SF):log(TotalSq) + Overall.Qual:Garage.Cars:log(TotalSq) + Overall.Qual:Garage.Cars + Overall.Qual:log(TotalSq) + Garage.Cars:log(Total.Bsmt.SF):log(TotalSq) + Garage.Cars:log(TotalSq) + log(Total.Bsmt.SF):log(TotalSq) + Garage.Cars + log(Total.Bsmt.SF) + log(TotalSq) + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + Bsmt.Exposure + Heating.QC + Central.Air + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + Fireplaces + Paved.Drive + log(Pool.Area), data = data_train)
+
+model.interact.reduced=lm(log(price) ~ log(Lot.Area) + Condition.1 + Overall.Qual + 
+    Baths + Neighborhood + Garage.Cars + log(Total.Bsmt.SF) + 
+    log(TotalSq) + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
+    Bsmt.Exposure + Heating.QC + Central.Air + Bedroom.AbvGr + 
+    Kitchen.AbvGr + Kitchen.Qual + Functional + Fireplaces + 
+    Paved.Drive + Overall.Qual:Garage.Cars + Overall.Qual:log(TotalSq) + 
+    Garage.Cars:log(TotalSq) + Overall.Qual:Garage.Cars:log(TotalSq), 
+    data = data_train)
+
+step(modelinteract, k=log(nrow(data_train)))
+library(tree)
+tree = tree(log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 + 
+               Overall.Qual + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
+               Bsmt.Exposure + log(Total.Bsmt.SF) + Heating.QC + Central.Air + 
+               Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + 
+               Fireplaces + Garage.Cars + Paved.Drive + log(Pool.Area) + 
+               log(TotalSq), data = data_train)
+# use cross-validation to prune
+cv.tree = cv.tree(tree)
+plot(cv.tree$size, cv.tree$dev, type='b')
+bb = cv.tree$size[which.min(cv.tree$dev)]
+
+# prune the tree for the size that is optimal based on CV
+prune.tree=prune.tree(tree, best=bb)
+
+# plot the pruned tree
+plot(prune.tree)
+text(prune.tree, pretty=0)
+prune.tree
 
 summary(model.BIC)
 plot(model.BIC)
@@ -369,7 +400,7 @@ Y = data_test$price
 
 
 
-Yhat = predict(model.BIC, newdata=data_test, interval="predict")
+Yhat = predict(model.interact.reduced, newdata=data_test, interval="predict")
 
 # depending on the response transformation
 Yhat = exp(Yhat)
