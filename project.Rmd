@@ -79,11 +79,6 @@ For variable “functional”, we recoded different ordinal levels into binary l
 
 We summed up the number of bathrooms to one continuous variable. Note that one half-bathroom would be coded as 0.5.	
 ```{r}
-train = ames_train
-
-<<<<<<< HEAD
-train <- train  %>%   filter(!is.na(Lot.Frontage)) %>% 
-=======
 # Did not remove any NA entries in Lot.frontage
 
 data=ames_train
@@ -91,7 +86,6 @@ data=ames_train
 data <- data  %>%
   #filter(!is.na(Lot.Frontage)) %>% 
   mutate(MS.SubClass= factor(MS.SubClass)) %>%
->>>>>>> dae7348c002ba6cf9e19dd613631189556d8cde7
   mutate(Alley =  factor(Alley, levels = levels(addNA(Alley)), labels = c(levels(Alley), "None"), exclude = NULL)) %>%
   mutate(HouseAge = Yr.Sold- pmax(Year.Built, Year.Remod.Add))  %>%
   filter(!is.na(Mas.Vnr.Area))  %>% 
@@ -129,10 +123,6 @@ data <- data  %>%
   mutate(Fence =  factor(Fence, levels = levels(addNA(Fence)), labels = c(levels(Fence), "None"), exclude = NULL)) %>%
   mutate(Misc.Feature =  factor(Misc.Feature, levels = levels(addNA(Misc.Feature)), labels = c(levels(Misc.Feature), "None"), exclude = NULL)) %>%
   mutate(Mo.Sold = as.factor(Mo.Sold)) %>%
-<<<<<<< HEAD
-    mutate(Yr.Sold = as.factor(Yr.Sold)) %>%
-  dplyr::select(-Garage.Yr.Blt)
-=======
   mutate(Yr.Sold = as.factor(Yr.Sold)) %>%
   dplyr::select(-Garage.Yr.Blt) %>%
   mutate(Condition.1 = as.character(Condition.1)) %>%
@@ -162,8 +152,6 @@ data_train$Bsmt.Exposure<-droplevels(data_train$Bsmt.Exposure)
 
 data_train$Pool.Area<-data_train$Pool.Area+1
 data_train$Total.Bsmt.SF<-data_train$Total.Bsmt.SF+1
-
->>>>>>> dae7348c002ba6cf9e19dd613631189556d8cde7
 ```
 
 The `Neighborhood` variable, typically of little interest other than to model the location effect, may be of more relevance when used with the [map](http://www.amstat.org/publications/jse/v19n3/decock/AmesResidential.pdf).
@@ -404,19 +392,19 @@ performance(Y, Yhat)
 library(glmnet)
 
 X.train = model.matrix(log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 + 
-                         Overall.Qual + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
-                         Bsmt.Exposure + log(Total.Bsmt.SF) + Heating.QC + Central.Air + 
-                         Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + 
-                         Fireplaces + Garage.Cars + Paved.Drive + log(Pool.Area) + 
-                         log(TotalSq), data=data_train)
+               Overall.Qual + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
+               Bsmt.Exposure + log(Total.Bsmt.SF) + Heating.QC + Central.Air + 
+               Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + 
+               Fireplaces + Garage.Cars + Paved.Drive + log(Pool.Area) + 
+               log(TotalSq), data = data_train)
 
 
 X.test = model.matrix(log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 + 
-                        Overall.Qual + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
-                        Bsmt.Exposure + log(Total.Bsmt.SF) + Heating.QC + Central.Air + 
-                        Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + 
-                        Fireplaces + Garage.Cars + Paved.Drive + log(Pool.Area) + 
-                        log(TotalSq), data=data_test)
+               Overall.Qual + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
+               Bsmt.Exposure + log(Total.Bsmt.SF) + Heating.QC + Central.Air + 
+               Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + 
+               Fireplaces + Garage.Cars + Paved.Drive + log(Pool.Area) + 
+               log(TotalSq), data = data_test)
 
 
 model.lasso = glmnet(X.train, log(data_train$price), alpha=1)
@@ -468,6 +456,24 @@ performance(data_test$price, y_hat)
 
 ```
 
+```{r}
+library(ggplot2)
+#Data Vizualizations
+neighborhood.price.range = ggplot(data_train, aes(x = log(price), y = reorder(Neighborhood, desc(log(price)), median))) +
+  geom_polygon(color="Black",size = 1, alpha=1) + geom_point(stat="identity", aes(color="red3"), size=1.5) + theme_light() + coord_flip() + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(y="Neighborhood")
+
+plot(neighborhood.price.range)
+
+library(treemap)
+
+tree.data = data_train %>% mutate(price.bin = ifelse(price <= 50000, "<= $50,000", ifelse(price > 50000 & price <= 100000, "$50,000-100,000", ifelse(price > 100000 & price <= 200000, "$100,000-200,000", ifelse(price > 200000 & price <= 300000, "$200,000-300,000", ifelse(price > 300000 & price <= 400000, "$300,000-400,000", ifelse(price > 400000 & price <= 500000, "$400,000-500,000", "> $500,000")))))))
+
+area.plot = treemap(tree.data, index="price.bin", vSize="Lot.Area", type="index", palette="YlGn", algorithm="pivotSize", title="Effect of Lot Area on Price Range", fontsize.title = 14)
+
+data_train$Overall.Qual = as.numeric(data_train$Overall.Qual)
+quality.plot = ggplot(train, aes(x = Overall.Qual, y=price)) + geom_smooth(color="gold3") + geom_count(color="red3") + theme_minimal()
+plot(quality.plot)
+```
 
 
 
