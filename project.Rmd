@@ -44,42 +44,15 @@ which(miss_prop>0.5) # four features have greater than 50% of data "missing" -- 
 
 
 ```{r}
-levels(ames_train$Neighborhood)
 
-# [1] "Blmngtn" "Blueste" "BrDale"  "BrDale" "ClearCr" "CollgCr" "Crawfor" "Edwards" "Gilbert" "Greens"  "GrnHill"
-# [12] "IDOTRR"  "Landmrk" "MeadowV" "Mitchel" "NAmes"   "NoRidge" "NPkVill" "NridgHt" "NWAmes"  "OldTown" "Sawyer" 
-# [23] "SawyerW" "Somerst" "StoneBr" "SWISU"   "Timber"  "Veenker"
+neighborhoods = unique(data_train$Neighborhood)
 
-ames_train$distance<-0
+distance = c(1.0, 2.8, 2.8, 5.0, 2.8, 2.4, 3.0, 2.5, 4.5, 2.5, 3.0, 2.7, 1.0, 2.0, 2.7, 3.2, 2.9, 4.0, 3.2, 3.9, 1.0, 1.8, 1.3, 3.6, 2.3, 1.1, 3.4, 1.5)
 
-ames_train$distance[ames_train$Neighborhood=="Blmngtn"] = 1
-ames_train$distance[ames_train$Neighborhood=="Blueste"] = 1
-ames_train$distance[ames_train$Neighborhood=="BrDale"] = 1
-ames_train$distance[ames_train$Neighborhood=="BrDale"] = 1
-ames_train$distance[ames_train$Neighborhood=="ClearCr"] = 1
-ames_train$distance[ames_train$Neighborhood=="CollgCr"] = 1
-ames_train$distance[ames_train$Neighborhood=="Crawfor"] = 1
-ames_train$distance[ames_train$Neighborhood=="Edwards"] = 1
-ames_train$distance[ames_train$Neighborhood=="Gilbert"] = 1
-ames_train$distance[ames_train$Neighborhood=="Greens"] = 1
-ames_train$distance[ames_train$Neighborhood=="GrnHill"] = 1
-ames_train$distance[ames_train$Neighborhood=="IDOTRR"] = 1
-ames_train$distance[ames_train$Neighborhood=="Landmrk"] = 1
-ames_train$distance[ames_train$Neighborhood=="MeadowV"] = 1
-ames_train$distance[ames_train$Neighborhood=="Mitchel"] = 1
-ames_train$distance[ames_train$Neighborhood=="NAmes"] = 1
-ames_train$distance[ames_train$Neighborhood=="NoRidge"] = 1
-ames_train$distance[ames_train$Neighborhood=="NPkVill"] = 1
-ames_train$distance[ames_train$Neighborhood=="NridgHt"] = 1
-ames_train$distance[ames_train$Neighborhood=="NWAmes"] = 1
-ames_train$distance[ames_train$Neighborhood=="OldTown"] = 1
-ames_train$distance[ames_train$Neighborhood=="Sawyer"] = 1
-ames_train$distance[ames_train$Neighborhood=="SawyerW"] = 1
-ames_train$distance[ames_train$Neighborhood=="Somerst"] = 1
-ames_train$distance[ames_train$Neighborhood=="StoneBr"] = 1
-ames_train$distance[ames_train$Neighborhood=="SWISU"] = 1
-ames_train$distance[ames_train$Neighborhood=="Timber"] = 1
-ames_train$distance[ames_train$Neighborhood=="Veenker"] = 1
+
+
+
+
 
 
 ```
@@ -274,6 +247,15 @@ summary(model.interact.reduced)
 plot(model.interact.reduced)
 
 
+results <- summary(model.interact.reduced) 
+
+id<-results$coefficients[,4]<1e-6
+
+sum(id)
+
+aa<-results$coefficients[id,]
+
+
 step(modelinteract, k=log(nrow(data_train)))
 library(tree)
 tree = tree(log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 + 
@@ -410,6 +392,10 @@ Yhat = predict(model, newdata=data_test, interval="predict")
 
 # depending on the response transformation
 Yhat = exp(Yhat)
+
+
+performance(Y, Yhat)
+
 
 #For calculating Top 10 undervalued and overvalued homes
 over.under = data.frame(value.diff = Yhat/Y)
