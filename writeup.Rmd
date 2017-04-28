@@ -308,9 +308,33 @@ We tried a range of different approaches for a more complex model. Among others,
 
 In consequence, the final model contains 22 different variables, two 2-way interactions and one 3-way interaction. 
 
-The 10 most imortant varaiables are summarized in the following table
+The 18 most imortant predictors are summarized in the following table. As one would expect (and mirroring the conclusions from the simple model), we  
 
 ```{r}
+library(knitr)
+
+model.interact.reduced=lm(log(price) ~ log(Lot.Area) + Condition.1 + Overall.Qual + 
+    Baths + Neighborhood + Garage.Cars + log(Total.Bsmt.SF) + 
+    log(TotalSq) + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
+    Bsmt.Exposure + Heating.QC + Central.Air + Bedroom.AbvGr + 
+    Kitchen.AbvGr + Kitchen.Qual + Functional + Fireplaces + 
+    Paved.Drive + Overall.Qual:Garage.Cars + Overall.Qual:log(TotalSq) + 
+    Garage.Cars:log(TotalSq) + Overall.Qual:Garage.Cars:log(TotalSq), 
+    data = data_train)
+#summary(model.interact.reduced)
+#plot(model.interact.reduced)
+
+
+results <- summary(model.interact.reduced) 
+
+id<-which(results$coefficients[,4]<1e-7)
+
+length(id)
+
+aa<-results$coefficients[id,4]
+a<-sort.int(aa, index.return=TRUE)
+
+kable(results$coefficients[id[a$ix],])
 
 ```
 
@@ -319,7 +343,7 @@ The 10 most imortant varaiables are summarized in the following table
 
 * Variables: must include an explanation
 
-* Variable selection/shrinkage: must use appropriate method and include an explanation
+* Variable selecidtion/shrinkage: must use appropriate method and include an explanation
 
 
 
