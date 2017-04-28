@@ -120,27 +120,12 @@ neighborhood.price.range = ggplot(data_train, aes(x = reorder(Neighborhood, desc
 plot(neighborhood.price.range)
 ```
 
-An interesting observation is that there is a wider dispersion among the more affluent neighborhoods basede on relative inter-quartile ranges, whereas the neighborhoods with cheaper housing tend to be more concentrated around their medians. There are of course a few exceptions in the former, such as Green Hills and Greens, but in general those neighborhoods with higher housing prices tend to have larger variance. This conforms to a note given to us in the variable guide, which tells us that the assumption of homoskedasticity appears to be violated, as variation increases with sale price. This is an important observation, as it indicates that we would be wise to transform the response variable (which we have in the form of a log transformation).
+An interesting observation is that there is a wider dispersion among the more affluent neighborhoods based on relative inter-quartile ranges, whereas the neighborhoods with cheaper housing tend to be more concentrated around their medians. This conforms to a note given to us in the variable guide, which tells us that the assumption of homoskedasticity appears to be violated, as variation increases with sale price. This is an important observation, as it indicates that we would be wise to transform the response variable (which we have, in the form of a log transformation).
+
+With respect to location, we note that Ames is a college town built around Iowa State. With almost 16,000 employees, the unviersity is by far the biggest employer in town. Based on the available neighborhood map, we traced out the distance from the university to the different neighborhoods. This is visualized in the following graph. 
 
 
-To show the relationship between price and lot area, we chose a treemap. In this plot, we have binned housing prices into arbitrary ranges. Each range has its own color (which we note are unfortunately not ordered by scale) and is labeled accordingly, while the sizes of the squares indicate the mean Lot Area for that binned category. The unlabeled rectangles in the bottom right corner are the “Less than $50,000” range (the smallest square) and the “$500,000+” range (the long, narrow rectangle). It is interesting to see that while lot area increases in price initially, it reaches its peak at the $100,000-200,000 range and starts to decrease in price after that. While we accounted for the non-linearity in this explanatory variable in our finalized models by using a log transformation, the fit on this particular variable could possibly improved with a spline, though we were not able to produce such a model that was superior to our linear models.
-
-
-```{r}
-
-
-
-tree.data = data_train %>% mutate(price.bin = ifelse(price <= 50000, "<= $50,000", ifelse(price > 50000 & price <= 100000, "$50,000-100,000", ifelse(price > 100000 & price <= 200000, "$100,000-200,000", ifelse(price > 200000 & price <= 300000, "$200,000-300,000", ifelse(price > 300000 & price <= 400000, "$300,000-400,000", ifelse(price > 400000 & price <= 500000, "$400,000-500,000", "> $500,000")))))))
-tree.data = as.data.frame(tree.data)
-
-area.plot = treemap(tree.data, index=c("price.bin", "price"), vSize="Lot.Area", type="index", palette="YlGn", algorithm="pivotSize", title="Effect of Lot Area on Price Range", fontsize.title = 14)
-
-area.plot = treemap(tree.data, index=c("price.bin", "price"), vSize="TotalSq", type="index", palette="Oranges", algorithm="pivotSize", title="Effect of Total Square Footage on Price Range", fontsize.title = 14)
-
-
-
-```
-
+We see that TBD
 
 
 Our third plot shows the relationship between a house’s price and its overall quality, rated on a scale from 1 (Very Poor) to 10 (Very Excellent).
