@@ -166,6 +166,143 @@ Model Testing
 
 Beyond the RMSE, we were very pleased to see a bias relatively closer to zero than our fellow teams, at -165.05. We observed a maximum deviation of 66,474.27, a mean deviation of 11,458.19, and coverage of 96.2%. The coverage is very favorable and, given that the mean deviation is less than 10% of the mean housing price for the training set, we are please with these results.
 
+```{r}
+library(gbm)
+
+boost = gbm(log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 + 
+               Overall.Qual + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
+               Bsmt.Exposure + log(Total.Bsmt.SF) + Heating.QC + Central.Air + 
+               Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + 
+               Fireplaces + Garage.Cars + Paved.Drive + log(Pool.Area) + 
+               log(TotalSq), data = data_train, distribution="gaussian", n.trees=5000, interaction.depth = 1, shrinkage=0.01, verbose = F)
+
+summary(boost)
+
+model.BIC=lm(formula = log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 + 
+               Overall.Qual + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
+               Bsmt.Exposure + log(Total.Bsmt.SF) + Central.Air + 
+               Baths + Kitchen.AbvGr + Kitchen.Qual + Functional + 
+               Fireplaces + Garage.Cars + Paved.Drive +
+               log(TotalSq), data = data_train)
+summary(model.BIC)
+plot(model.BIC)
+```
+
+```{r}
+## Prepare test data
+load("ames_test.Rdata")
+
+data=ames_test
+
+data <- data  %>%  
+  #filter(!is.na(Lot.Frontage)) %>% 
+  mutate(MS.SubClass= factor(MS.SubClass)) %>%
+  mutate(Alley =  factor(Alley, levels = levels(addNA(Alley)), labels = c(levels(Alley), "None"), exclude = NULL)) %>%
+  mutate(HouseAge = Yr.Sold- pmax(Year.Built, Year.Remod.Add))  %>%
+  #filter(!is.na(Mas.Vnr.Area))  %>% 
+  mutate(Bsmt.YN = 1*(!is.na(Bsmt.Qual))) %>%
+  mutate(Bsmt.Qual =  factor(Bsmt.Qual, levels = levels(addNA(Bsmt.Qual)), labels = c(levels(Bsmt.Qual), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Qual = relevel(Bsmt.Qual, ref="None")) %>%
+  mutate(Bsmt.Cond =  factor(Bsmt.Cond, levels = levels(addNA(Bsmt.Cond)), labels = c(levels(Bsmt.Cond), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Cond = relevel(Bsmt.Cond, ref="None")) %>%
+  mutate(Bsmt.Exposure =  factor(Bsmt.Exposure, levels = levels(addNA(Bsmt.Exposure)), labels = c(levels(Bsmt.Exposure), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Exposure = relevel(Bsmt.Exposure, ref="None")) %>%
+  mutate(BsmtFin.Type.1=  factor(BsmtFin.Type.1, levels = levels(addNA(BsmtFin.Type.1)), labels = c(levels(BsmtFin.Type.1), "None"), exclude = NULL)) %>%
+  mutate(BsmtFin.Type.1 = relevel(BsmtFin.Type.1, ref="None")) %>%
+  mutate(BsmtFin.Type.2=  factor(BsmtFin.Type.2, levels = levels(addNA(BsmtFin.Type.2)), labels = c(levels(BsmtFin.Type.2), "None"), exclude = NULL)) %>%
+  mutate(BsmtFin.Type.2 = relevel(BsmtFin.Type.2, ref="None")) %>%
+  mutate(X12.SF= X1st.Flr.SF+ X2nd.Flr.SF)  %>%   
+  #filter(!is.na(Bsmt.Full.Bath)) %>%
+  #filter(!is.na(Bsmt.Half.Bath)) %>%
+  mutate(Baths = Bsmt.Full.Bath + 0.5*Bsmt.Half.Bath + Full.Bath + 0.5*Half.Bath) %>%
+  mutate(Fireplace.YN = 1*(Fireplaces>0)) %>%
+  mutate(Fireplace.Qu =  factor(Fireplace.Qu, levels = levels(addNA(Fireplace.Qu)), labels = c(levels(Fireplace.Qu), "None"), exclude = NULL)) %>%
+  mutate(Fireplace.Qu = relevel(Fireplace.Qu, ref="None")) %>%
+  mutate(Garage.YN = 1*(!is.na(Garage.Cond))) %>%
+  mutate(Garage.Type =  factor(Garage.Type, levels = levels(addNA(Garage.Type)), labels = c(levels(Garage.Type), "None"), exclude = NULL)) %>%
+  mutate(Garage.Type = relevel(Garage.Type, ref="None")) %>%
+  mutate(Garage.Finish =  factor(Garage.Finish, levels = levels(addNA(Garage.Finish)), labels = c(levels(Garage.Finish), "None"), exclude = NULL)) %>%
+  mutate(Garage.Finish = relevel(Garage.Finish, ref="None")) %>%
+  mutate(Garage.Qual =  factor(Garage.Qual, levels = levels(addNA(Garage.Qual)), labels = c(levels(Garage.Qual), "None"), exclude = NULL)) %>%
+  mutate(Garage.Qual = relevel(Garage.Qual, ref="None")) %>%
+  mutate(Garage.Cond =  factor(Garage.Cond, levels = levels(addNA(Garage.Cond)), labels = c(levels(Garage.Cond), "None"), exclude = NULL)) %>%
+  mutate(Garage.Cond = relevel(Garage.Cond, ref="None")) %>%
+  mutate(Porch.Area = Wood.Deck.SF+ Open.Porch.SF+Enclosed.Porch+X3Ssn.Porch + Screen.Porch) %>%
+  mutate(Pool.YN = 1*(Pool.Area>0)) %>%
+  mutate(Pool.QC =  factor(Pool.QC, levels = levels(addNA(Pool.QC)), labels = c(levels(Pool.QC), "None"), exclude = NULL)) %>%
+  mutate(Pool.QC = relevel(Pool.QC, ref="None")) %>%
+  mutate(Fence =  factor(Fence, levels = levels(addNA(Fence)), labels = c(levels(Fence), "None"), exclude = NULL)) %>%
+  mutate(Misc.Feature =  factor(Misc.Feature, levels = levels(addNA(Misc.Feature)), labels = c(levels(Misc.Feature), "None"), exclude = NULL)) %>%
+  mutate(Mo.Sold = as.factor(Mo.Sold)) %>%
+  mutate(Yr.Sold = as.factor(Yr.Sold)) %>%
+  dplyr::select(-Garage.Yr.Blt) %>%
+  mutate(Condition.1 = as.character(Condition.1)) %>%
+  mutate(Kitchen.Qual=plyr::mapvalues(Kitchen.Qual, from = c("Po", "Fa", "TA","Gd", "Ex" ), to = c("1", "2", "3", "4", "5"))) %>%
+  mutate(Kitchen.Qual = as.numeric(as.character(Kitchen.Qual))) %>%
+  mutate(Heating.QC=plyr::mapvalues(Heating.QC, from = c("Po", "Fa", "TA","Gd", "Ex" ), to = c("1", "2", "3", "4", "5"))) %>%
+  mutate(Heating.QC = as.numeric(as.character(Heating.QC))) %>%
+  mutate(Bsmt.Qual = droplevels(Bsmt.Qual)) %>%
+  mutate(Functional = droplevels(Functional)) %>%
+  mutate(Roof.Matl = droplevels(Roof.Matl))
+
+
+
+
+ind_rail<-which(data$Condition.1=="RRNn" | data$Condition.1=="RRAn" | data$Condition.1=="RRNe" | data$Condition.1=="RRAe")
+ind_park<-which(data$Condition.1=="PosN" | data$Condition.1=="PosA")
+data$Condition.1[ind_rail]<-"Rail"
+data$Condition.1[ind_park]<-"Park"
+
+
+
+data = data %>% 
+  mutate(Condition.1 = factor(Condition.1)) %>%
+  mutate(Condition.1 = relevel(Condition.1, ref="Norm")) 
+
+data_test=data
+
+
+data_test$Bsmt.Exposure[which(data_test$Bsmt.Exposure=="")]<-"None"
+data_test$Bsmt.Exposure<-droplevels(data_test$Bsmt.Exposure)
+
+
+
+data_test$Pool.Area<-data_test$Pool.Area+1
+data_test$Total.Bsmt.SF<-data_test$Total.Bsmt.SF+1
+
+
+# extract the truth
+Y = data_test$price
+
+# make prediction based on specific model
+
+
+
+Yhat = predict(model.BIC, newdata=data_test, interval="predict")
+
+# depending on the response transformation
+Yhat = exp(Yhat)
+
+
+# name dataframe as predictions! DO NOT CHANGE
+predictions = as.data.frame(Yhat)
+predictions$PID = data_test$PID
+
+save(predictions, file="predict.Rdata")
+
+performance(Y, Yhat)
+
+mean(Y-Yhat)
+  
+max(abs(Y-Yhat))
+  
+mean(abs(Y-Yhat[1]))
+  
+sqrt(mean((Y-Yhat)^2))
+```
+
+
+
 ## 3. Development of the final model (20 points)
 
 We tried a range of different approaches for a more complex model. Among others, we evaluated tree models, bagging, boosting and random forests, as well as Lasso and Ridge. Based on RMSE however, none of these options was able to outperform a linear model with interaction terms.
@@ -177,7 +314,6 @@ The 10 most imortant varaiables are summarized in the following table
 ```{r}
 
 ```
-
 
 
 * Final model: must include a summary table
