@@ -1,28 +1,68 @@
 ---
 title: "Final Project Writeup"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+## 1. Exploratory data analysis (20 points)
+Instruction: You must include three correctly labeled graphs and an explanation that highlight the most important features that went into your model building.
 
-```{r cars}
-summary(cars)
-```
 
-## Including Plots
+During the development of our project, we used random forests and boosting not only in our quest to find the best performing model, but also as a useful tool for exploratory data analysis. A particularly useful feature in this regard was the relative importance plot, which revealed that Neighborhood, Lot Area, and Overall Quality were the most important variables. In response to this, we chose to create plots highlighting the relationships between Price and these three important features.
 
-You can also embed plots, for example:
+In our first graph, we use a boxplot to show the range of prices across neighborhoods. From this type of plot, we can see the price range, interquartile range, median, and outliers, arranged in descending order from the neighborhood with the highest median price range to the neighborhood with the lowest. An interesting observation is that there seems to be wider dispersion among the more affluent neighborhoods, whereas the neighborhoods with cheaper housing tend to be more concentrated around their medians. There are of course a few exceptions in the former, such as Green Hills and Greens, but in general those neighborhoods with higher housing prices tend to have larger variance. This conforms to a note given to us in the variable guide, which tells us that the assumption of homoskedasticity appears to be violated, as variation increases with sale price. This is an important observation, as it indicates that we would be wise to transform the response variable (which we have in the form of a log transformation).
+To show the relationship between price and lot area, we chose a treemap. In this plot, we have binned housing prices into arbitrary ranges. Each range has its own color (which we note are unfortunately not ordered by scale) and is labeled accordingly, while the sizes of the squares indicate the mean Lot Area for that binned category. The unlabeled rectangles in the bottom right corner are the “Less than $50,000” range (the smallest square) and the “$500,000+” range (the long, narrow rectangle). It is interesting to see that while lot area increases in price initially, it reaches its peak at the $100,000-200,000 range and starts to decrease in price after that. While we accounted for the non-linearity in this explanatory variable in our finalized models by using a log transformation, the fit on this particular variable could possibly improved with a spline, though we were not able to produce such a model that was superior to our linear models.
+Our third plot shows the relationship between a house’s price and its overall quality, rated on a scale from 1 (Very Poor) to 10 (Very Excellent). The red clusters represent the counts of the number of observations that have a certain price and quality, with fatter clusters representing more observations having that price and quality. The gold smooth is a spline fitted with GAM (not by us, but by the geom_smooth function) that runs through the medians of the quality ratings, accompanied by a confidence band in transparent gray. It is interesting to note that most observations fall into the $100,000-300,000 range, as well as the 5 to 8 quality range, which we can observe due to the fatter clusters in these areas. We can also see that the confidence bands through this region are understandably at their most narrow, whereas the bands widen at the Very Poor end of the range, due to there being very few observations at that end. Finally, it is easy to see that there is a non-linear trend in price that occurs around the 7.5 mark, where the slope of the curve steepens. While it is possible that the best fit could be achieved by a spline, logging the price variable seemed to do the trick in correcting for this non-linearity. We did not log Overall Quality, due to its being an integer.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+2. Development and assessment of an initial model from Part I (10 points)
+
+* Initial model: must include a summary table and an explanation/discussion for variable selection.  Interpretation of coefficients desirable for full points.
+
+* Model selection: must include a discussion
+
+* Residual: must include a residual plot and a discussion
+
+* RMSE: must include an RMSE and an explanation  (other criteria desirable)
+
+* Model testing: must include an explanation
+
+
+
+3. Development of the final model (20 points)
+
+* Final model: must include a summary table
+
+* Variables: must include an explanation
+
+* Variable selection/shrinkage: must use appropriate method and include an explanation
+
+
+
+4. Assessment of the final model (25 points)
+
+* Residual: must include a residual plot and a discussion
+
+* RMSE: must include an RMSE and an explanation  (other criteria desirable)
+
+* Model evaluation: must include an evaluation discussion
+
+* Model testing : must include a discussion
+
+* Model result: must include a selection of the top 10 undervalued and overvalued houses
+
+
+
+5. Conclusion (10 points): must include a summary of results and a discussion of things learned
+
+
+
+
+
