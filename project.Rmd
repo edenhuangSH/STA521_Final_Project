@@ -134,8 +134,6 @@ data <- data  %>%
   mutate(Functional = droplevels(Functional)) %>%
   mutate(Roof.Matl = droplevels(Roof.Matl))
 
-
-
 # Simplify Condition 1 (Park, Rail, Normal)
 ind_rail<-which(data$Condition.1=="RRNn" | data$Condition.1=="RRAn" | data$Condition.1=="RRNe" | data$Condition.1=="RRAe")
 ind_park<-which(data$Condition.1=="PosN" | data$Condition.1=="PosA")
@@ -372,19 +370,19 @@ performance(Y, Yhat)
 library(glmnet)
 
 X.train = model.matrix(log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 + 
-                         Overall.Qual + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
-                         Bsmt.Exposure + log(Total.Bsmt.SF) + Heating.QC + Central.Air + 
-                         Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + 
-                         Fireplaces + Garage.Cars + Paved.Drive + log(Pool.Area) + 
-                         log(TotalSq), data=data_train)
+               Overall.Qual + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
+               Bsmt.Exposure + log(Total.Bsmt.SF) + Heating.QC + Central.Air + 
+               Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + 
+               Fireplaces + Garage.Cars + Paved.Drive + log(Pool.Area) + 
+               log(TotalSq), data = data_train)
 
 
 X.test = model.matrix(log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 + 
-                        Overall.Qual + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
-                        Bsmt.Exposure + log(Total.Bsmt.SF) + Heating.QC + Central.Air + 
-                        Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + 
-                        Fireplaces + Garage.Cars + Paved.Drive + log(Pool.Area) + 
-                        log(TotalSq), data=data_test)
+               Overall.Qual + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
+               Bsmt.Exposure + log(Total.Bsmt.SF) + Heating.QC + Central.Air + 
+               Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + 
+               Fireplaces + Garage.Cars + Paved.Drive + log(Pool.Area) + 
+               log(TotalSq), data = data_test)
 
 
 model.lasso = glmnet(X.train, log(data_train$price), alpha=1)
@@ -416,7 +414,6 @@ model.bma = bas.lm(log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 +
                      Fireplaces + Garage.Cars + Paved.Drive + log(Pool.Area) + 
                      log(TotalSq), data=data_train,  prior="g-prior", a=nrow(data_train), modelprior=uniform(), method="MCMC", MCMC.iterations = 200000, thin = 20)
 
-
 y_pred<-predict.bas(model.bma,newdata=data_test, estimator="BPM", prediction=TRUE, se.fit=TRUE)
 
 y_hat<-exp(confint.pred.bas(y_pred))
@@ -424,6 +421,231 @@ y_hat<-exp(confint.pred.bas(y_pred))
 y_hat= y_hat[,c(3,1,2)]
 
 performance(data_test$price, y_hat)
+```
+
+
+
+
+```{r}
+library(ggplot2)
+#Data Vizualizations
+# neighborhood.price.range = ggplot(data_train, aes(x = log(price), y = reorder(Neighborhood, desc(log(price)), median))) +
+#   geom_polygon(color="Black",size = 1, alpha=1) + geom_point(stat="identity", aes(color="red3"), size=1.5) + theme_light() + coord_flip() + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(y="Neighborhood")
+
+neighborhood.price.range = ggplot(data_train, aes(y = log(price), x = reorder(Neighborhood, desc(log(price)), median))) + 
+                           geom_violin() + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+plot(neighborhood.price.range)
+```
+
+
+
+```{r}
+library(treemap)
+
+tree.data = data_train %>% mutate(price.bin = ifelse(price <= 50000, "<= $50,000", ifelse(price > 50000 & price <= 100000, "$50,000-100,000", ifelse(price > 100000 & price <= 200000, "$100,000-200,000", ifelse(price > 200000 & price <= 300000, "$200,000-300,000", ifelse(price > 300000 & price <= 400000, "$300,000-400,000", ifelse(price > 400000 & price <= 500000, "$400,000-500,000", "> $500,000")))))))
+
+area.plot = treemap(tree.data, index="price.bin", vSize="Lot.Area", type="index", palette="YlGn", algorithm="pivotSize", title="Effect of Lot Area on Price Range", fontsize.title = 14)
+
+data_train$Overall.Qual = as.numeric(data_train$Overall.Qual)
+quality.plot = ggplot(train, aes(x = Overall.Qual, y=price)) + geom_smooth(color="gold3") + geom_count(color="red3") + theme_minimal()
+plot(quality.plot)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+library(MASS)
+
+#Full Model
+model=lm(log(price) ~ MS.SubClass + MS.Zoning + log(Lot.Frontage) + log(Lot.Area) +  Street + Alley + Lot.Shape + Land.Contour + Lot.Config + Land.Slope + Neighborhood + Condition.1  + Bldg.Type + House.Style + Overall.Qual + Overall.Cond + HouseAge + Roof.Style + Roof.Matl + Exterior.1st + Exterior.2nd + Mas.Vnr.Type + log(1+Mas.Vnr.Area) + Exter.Qual + Exter.Cond + Foundation + Bsmt.YN:Bsmt.Qual + Bsmt.YN:Bsmt.Cond + Bsmt.YN:Bsmt.Exposure + Total.Bsmt.SF + Heating + Heating.QC + Central.Air + Electrical + log(X12.SF) + log(1+Low.Qual.Fin.SF) + Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + Fireplaces + Fireplace.YN:Fireplace.Qu + Garage.YN:Garage.Type + Garage.YN:Garage.Finish + Garage.Cars + Garage.YN:Garage.Cond + Garage.YN:Garage.Qual + Paved.Drive + log(1+Pool.Area) + Pool.YN:Pool.QC + Fence + Misc.Val + Mo.Sold + Yr.Sold + Sale.Type  + TotalSq, data=train)
+
+summary(model)
+boxcox(model)
+#BIC model selection
+step(model, k=log(nrow(train)))
+
+#step(model, k=2)
+# OLD
+# model=lm(log(price)~ms.subclass + MS.Zoning + log(Lot.Frontage) + log(area) + Street + Alley + Lot.Shape + Land.Contour + Lot.Config + Land.Slope + Neighborhood + Condition.1 + Bldg.Type + House.Style + Overall.Qual + Overall.Cond + Year.Built + Year.Remod.Add + Roof.Style + Exterior.1st + Exterior.2nd + Mas.Vnr.Type + log(Mas.Vnr.Area + 1) + Exter.Qual + Exter.Cond + Foundation + Bsmt.Qual + Bsmt.Cond + Bsmt.Exposure + Heating.QC + Central.Air + Electrical + log(X1st.Flr.SF) + log(X2nd.Flr.SF) + Baths + Bedroom.AbvGr + Kitchen.AbvGr + TotRms.AbvGrd + Paved.Drive + log(Wood.Deck.SF + 1) + log(Open.Porch.SF + 1) + log(Enclosed.Porch + 1) + log(X3Ssn.Porch + 1) + log(Screen.Porch + 1) + log(Misc.Val + 1) + Mo.Sold + Yr.Sold + Sale.Type + log(TotalSq), data=train)
+#vif(model)
+#summary(model)
+
+#Model Selection by AIC
+#step(model, k=2)
+##AIC_model = lm(formula = log(price) ~ PID + area + MS.SubClass + MS.Zoning + 
+#    Lot.Area + Lot.Shape + Utilities + Land.Slope + Neighborhood + 
+#    Condition.1 + Bldg.Type + House.Style + Overall.Qual + Overall.Cond + 
+#    Year.Built + Year.Remod.Add + Roof.Style + Roof.Matl + Exterior.1st + 
+#    Exterior.2nd + Exter.Qual + Exter.Cond + Foundation + BsmtFin.SF.1 + 
+#    BsmtFin.SF.2 + Bsmt.Unf.SF + Heating + Heating.QC + Central.Air + 
+#    Electrical + X1st.Flr.SF + X2nd.Flr.SF + Bsmt.Full.Bath + 
+#    Kitchen.Qual + Functional + Garage.Cars + Garage.Area + Paved.Drive + 
+#    Wood.Deck.SF + Open.Porch.SF + Enclosed.Porch + Screen.Porch + 
+#    Mo.Sold + Yr.Sold + has.fence + has.fireplace, data = train)
+#summary(AIC_model)
+
+#Model Selection by BIC
+#BIC_model = lm(formula = log(price) ~ PID + area + MS.Zoning + Lot.Area + 
+#    Neighborhood + Condition.1 + Bldg.Type + Overall.Qual + Overall.Cond + 
+#   Year.Built + Year.Remod.Add + BsmtFin.SF.1 + BsmtFin.SF.2 + 
+#    Bsmt.Unf.SF + Central.Air + Bsmt.Full.Bath + Kitchen.Qual + 
+#    Functional + Garage.Cars + Garage.Area + Open.Porch.SF + 
+#    Enclosed.Porch + Screen.Porch + has.fireplace, data = train)
+#summary(BIC_model)
+
+#Use Boosting to find important variables
+#
+#library(gbm)
+#
+#boost = gbm(log(price) ~ PID + area + MS.Zoning + Lot.Area + 
+#    Neighborhood + Condition.1 + Bldg.Type + Overall.Qual + Overall.Cond + 
+#    Year.Built + Year.Remod.Add + BsmtFin.SF.1 + BsmtFin.SF.2 + 
+#    Bsmt.Unf.SF + Central.Air + Bsmt.Full.Bath + Kitchen.Qual + 
+#    Functional + Garage.Cars + Garage.Area + Open.Porch.SF + 
+#    Enclosed.Porch + Screen.Porch + has.fireplace, data = train, distribution="gaussian", n.trees=5000, #interaction.depth = 1, shrinkage=0.01, verbose = F)
+
+#summary(boost)
+
+##Sparse Model (removed variables to bring the number below 20)
+#sparse_model = lm(log(price) ~ area + MS.Zoning + Lot.Area + 
+#    Neighborhood + Condition.1 + Overall.Qual + Overall.Cond + 
+#    Year.Built + Year.Remod.Add + BsmtFin.SF.1 + BsmtFin.SF.2 + 
+#    Bsmt.Unf.SF + Central.Air + Bsmt.Full.Bath + Kitchen.Qual + 
+#    Functional + Garage.Cars + Garage.Area + has.fireplace, data = train)
+#summary(sparse_model)
+#plot(sparse_model)
+#termplot(sparse_model, 
+#    data = train)
+
+##Trying to detect non-linearity
+#attach(train)
+#plot(log(area), log(price))
+#plot(log(Lot.Area), log(price))
+#plot(log(Overall.Qual), log(price))
+#plot(log(Overall.Cond), log(price))
+#plot(log(Year.Built), log(price))
+#plot(log(Year.Remod.Add, log(price)))
+#plot(BsmtFin.SF.1, log(price))
+#plot(BsmtFin.SF.2, log(price))
+#plot(Bsmt.Unf.SF, log(price))
+#plot(Bsmt.Full.Bath, log(price))
+#plot(Garage.Cars, log(price))
+#plot(Garage.Area, log(price))
+#
+##OLD Simple model
+#model1 = lm(log(price) ~ log(area) + MS.Zoning + log(Lot.Area) + 
+#    Neighborhood + Condition.1 + log(Overall.Qual) + log(Overall.Cond) + 
+#    log(Year.Built) + log(Year.Remod.Add) + BsmtFin.SF.1 + BsmtFin.SF.2 + 
+#    Bsmt.Unf.SF + Central.Air + Bsmt.Full.Bath +
+#    Functional + Garage.Cars + Garage.Area + has.fireplace, data = train[-c(168, 461, 787),])
+#summary(model1)
+#plot(model1)
+
+#Simple model (based on BIC selection)
+model1 = lm(formula = log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 + 
+    Overall.Qual + Overall.Cond + HouseAge + Foundation + Total.Bsmt.SF + 
+    Central.Air + log(X12.SF) + Baths + Kitchen.AbvGr + Kitchen.Qual + 
+    Functional + Fireplaces + Garage.Cars + Paved.Drive + Bsmt.YN:Bsmt.Exposure, 
+    data = train)
+
+#Plot Price Ranges of each neighborhood
+library(ggplot2)
+
+neighborhood.price.range = ggplot(train, aes(x = log(price), y = reorder(Neighborhood, desc(log(price)), median))) +
+  geom_polygon(color="SlateGray",size = 1, alpha=1) + theme_light() + coord_flip() + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(y="Neighborhood")
+
+plot(neighborhood.price.range)
+```
+
+
+
+### Model Evaluation on Test Data
+Create predicted values for price using your model using the testing data
+
+```{r read-test-data}
+load("ames_test.Rdata")
+
+#Variables with NA's and their proportion of missing data
+miss = apply(is.na(ames_train), 2, sum)
+miss_prop = round(miss[miss>0]/nrow(ames_train), 3)
+print(miss_prop) 
+which(miss_prop>0.5) # four features have greater than 50% of data missing
+
+
+#Created binary variables for whether or not a house as an alley, pool, fence, misc. feature, fireplace, basement or garage, as I thought it may be more meaningful- Tom
+#May consider adding Lot.Frontage back in, as it only had 286 missing
+#Have to decide between filtering out N/A's for different Garage variables and only including 'has.garage'
+#Have to decide between filtering out N/A's for different Basement variables and only including 'has.basement'
+test <- ames_test  %>%   filter(!is.na(Lot.Frontage)) %>% 
+  mutate(Alley =  factor(Alley, levels = levels(addNA(Alley)), labels = c(levels(Alley), "None"), exclude = NULL)) %>%
+  mutate(HouseAge = Yr.Sold- pmax(Year.Built, Year.Remod.Add))  %>%
+  filter(!is.na(Mas.Vnr.Area))  %>% 
+  mutate(Bsmt.YN = !is.na(Bsmt.Qual)) %>%
+    mutate(Bsmt.Qual =  factor(Bsmt.Qual, levels = levels(addNA(Bsmt.Qual)), labels = c(levels(Bsmt.Qual), "NoBa"), exclude = NULL)) %>%
+    mutate(Bsmt.Cond =  factor(Bsmt.Cond, levels = levels(addNA(Bsmt.Cond)), labels = c(levels(Bsmt.Cond), "NoBa"), exclude = NULL)) %>%
+    mutate(Bsmt.Exposure =  factor(Bsmt.Exposure, levels = levels(addNA(Bsmt.Exposure)), labels = c(levels(Bsmt.Exposure), "NoBa"), exclude = NULL)) %>%
+   mutate(BsmtFin.Type.1=  factor(BsmtFin.Type.1, levels = levels(addNA(BsmtFin.Type.1)), labels = c(levels(BsmtFin.Type.1), "NoBa"), exclude = NULL)) %>%
+    mutate(BsmtFin.Type.2=  factor(BsmtFin.Type.2, levels = levels(addNA(BsmtFin.Type.2)), labels = c(levels(BsmtFin.Type.2), "NoBa"), exclude = NULL)) %>%
+  mutate(X12.SF= X1st.Flr.SF+ X2nd.Flr.SF)  %>%   
+  filter(!is.na(Bsmt.Full.Bath)) %>%
+  filter(!is.na(Bsmt.Half.Bath)) %>%
+  mutate(Baths = Bsmt.Full.Bath + 0.5*Bsmt.Half.Bath + Full.Bath + 0.5*Half.Bath) %>%
+  mutate(Fireplace.YN = Fireplaces>0) %>%
+  mutate(Fireplace.Qu =  factor(Fireplace.Qu, levels = levels(addNA(Fireplace.Qu)), labels = c(levels(Fireplace.Qu), "None"), exclude = NULL)) %>%
+  mutate(Garage.YN = !is.na(Garage.Cond)) %>%
+    mutate(Garage.Type =  factor(Garage.Type, levels = levels(addNA(Garage.Type)), labels = c(levels(Garage.Type), "None"), exclude = NULL)) %>%
+  mutate(Garage.Finish =  factor(Garage.Finish, levels = levels(addNA(Garage.Finish)), labels = c(levels(Garage.Finish), "None"), exclude = NULL)) %>%
+    mutate(Garage.Qual =  factor(Garage.Qual, levels = levels(addNA(Garage.Qual)), labels = c(levels(Garage.Qual), "None"), exclude = NULL)) %>%
+      mutate(Garage.Cond =  factor(Garage.Cond, levels = levels(addNA(Garage.Cond)), labels = c(levels(Garage.Cond), "None"), exclude = NULL)) %>%
+  mutate(Porch.Area = Wood.Deck.SF+ Open.Porch.SF+Enclosed.Porch+X3Ssn.Porch + Screen.Porch) %>%
+  mutate(Pool.YN = Pool.Area>0) %>%
+  mutate(Pool.QC =  factor(Pool.QC, levels = levels(addNA(Pool.QC)), labels = c(levels(Pool.QC), "None"), exclude = NULL)) %>%
+    mutate(Fence =  factor(Fence, levels = levels(addNA(Fence)), labels = c(levels(Fence), "None"), exclude = NULL)) %>%
+  mutate(Misc.Feature =  factor(Misc.Feature, levels = levels(addNA(Misc.Feature)), labels = c(levels(Misc.Feature), "None"), exclude = NULL)) %>%
+  mutate(Mo.Sold = as.factor(Mo.Sold)) %>%
+    mutate(Yr.Sold = as.factor(Yr.Sold)) %>%
+  dplyr::select(-Garage.Yr.Blt) %>% filter(Condition.1 != "RRNe") %>% filter(Kitchen.Qual != "Po")
+                  
+```
+
+```{r predict-model1, echo=FALSE}
+Yhat = predict(model1, newdata=test, interval="prediction")
+```
+
+You should save your predictions in a dataframe with columns for `PID`  (property identifier), `fit`, predicted values on the test data, and where possible `lwr` and `upr`, lower and upper 95% interval estimates for predicting `price`. 
+
+```{r create }
+Y = test$price
+Yhat = exp(Yhat)
+
+#Bias
+mean(Yhat[,1] - Y)
+
+#Maximum Deviation
+max(abs(Y - Yhat[,1]))
+
+#Mean Absolute Deviation
+mean(abs(Y - Yhat[,1]))
+
+#RMSE
+sqrt(mean((Y - Yhat[,1])^2))
+
+#Coverage
+mean(Yhat[,"lwr"] < Y & Yhat[,"upr"] > Y)
+
+# name dataframe as predictions! DO NOT CHANGE
+predictions = as.data.frame(Yhat)
+predictions$PID = test$PID
+save(predictions, file="predict.Rdata")
 ```
 
 Your models will be evaluated on the following criteria on the test data: 
@@ -493,17 +715,15 @@ You may iterate here as much as you like exploring different models until you ar
 
 
 
-
-
-
-
-
 Bayesian lasso
 ```{r}
 library(glmnet)
 library(monomvn)
 
-housing.ridge = lm.ridge(log(price) ~ (MS.SubClass + MS.Zoning + log(Lot.Frontage) + log(Lot.Area) +  Street + Alley + Lot.Shape + Land.Contour + Lot.Config + Land.Slope + Neighborhood + Condition.1 + Bldg.Type + House.Style + Overall.Qual + Overall.Cond + HouseAge + Roof.Style + Roof.Matl + Exterior.1st + Exterior.2nd + Mas.Vnr.Type + log(1+Mas.Vnr.Area) + Exter.Cond + Exter.Cond + Foundation + Bsmt.YN:Bsmt.Qual + Bsmt.YN:Bsmt.Cond + Bsmt.YN:Bsmt.Exposure + Total.Bsmt.SF + Heating + Heating.QC + Central.Air + Electrical + log(X12.SF) + log(1+Low.Qual.Fin.SF) + Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + Fireplaces + Fireplace.YN:Fireplace.Qu + Garage.YN:Garage.Type + Garage.YN:Garage.Finish + Garage.Cars + Garage.YN:Garage.Cond + Garage.YN:Garage.Qual + Paved.Drive + log(1+Pool.Area) + Pool.YN:Pool.QC + Fence + Misc.Val + Mo.Sold  +Yr.Sold + Sale.Type + TotalSq)^2, 
+housing.ridge = lm.ridge(log(price) ~ (log(Lot.Area) + Neighborhood + Condition.1 + 
+    Overall.Qual + Overall.Cond + HouseAge + Foundation + Total.Bsmt.SF + 
+    Central.Air + log(X12.SF) + Baths + Kitchen.AbvGr + Kitchen.Qual + 
+    Functional + Fireplaces + Garage.Cars + Paved.Drive)^2 + Bsmt.YN:Bsmt.Exposure, 
                          lambda = seq(0, 5, 0.0001), data = data) 
 
 data2 = data %>% mutate(bsmt.qual = Bsmt.YN*Bsmt.Qual, bsmt.cond = Bsmt.YN:Bsmt.Cond,
@@ -523,8 +743,10 @@ best.lambda = housing.ridge$lambda[which.min(housing.ridge$GCV)]
 
 # lasso:
 # X and Y:
-X = model.matrix(log(price) ~ (MS.SubClass + MS.Zoning + log(Lot.Frontage) + log(Lot.Area) +  Street + Alley + Lot.Shape + Land.Contour + Lot.Config + Land.Slope + Neighborhood + Condition.1 + Bldg.Type + House.Style + Overall.Qual + Overall.Cond + HouseAge + Roof.Style + Roof.Matl + Exterior.1st + Exterior.2nd + Mas.Vnr.Type + log(1+Mas.Vnr.Area) + Exter.Cond + Exter.Cond + Foundation + Total.Bsmt.SF + Heating + Heating.QC + Central.Air + Electrical + log(X12.SF) + log(1+Low.Qual.Fin.SF) + Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + Fireplaces +  Garage.Cars +  + Paved.Drive + log(1+Pool.Area) + Fence + Misc.Val + Mo.Sold  +Yr.Sold + Sale.Type + TotalSq)^2
-                 + Bsmt.YN:Bsmt.Qual + Bsmt.YN:Bsmt.Cond + Bsmt.YN:Bsmt.Exposure + Fireplace.YN:Fireplace.Qu + Garage.YN:Garage.Type + Garage.YN:Garage.Finish + Garage.YN:Garage.Cond + Garage.YN:Garage.Qual + Pool.YN:Pool.QC, 
+X = model.matrix(log(price)~ (log(Lot.Area) + Neighborhood + Condition.1 + 
+    Overall.Qual + Overall.Cond + HouseAge + Foundation + Total.Bsmt.SF + 
+    Central.Air + log(X12.SF) + Baths + Kitchen.AbvGr + Kitchen.Qual + 
+    Functional + Fireplaces + Garage.Cars + Paved.Drive)^2 + Bsmt.YN:Bsmt.Exposure, 
                  data = data)
 Y = as.matrix(data[,3])
 
@@ -538,11 +760,21 @@ coef(housing.lasso)
 
 
 ```{r}
+library(monomvn)
 #SCALED??
-X.scaled = scale(X)
+
+
+X = model.matrix(log(price)~ log(Lot.Area) + as.numeric(Neighborhood) + as.numeric(Condition.1) + 
+    Overall.Qual + Overall.Cond + HouseAge + as.numeric(Foundation) + Total.Bsmt.SF + 
+    as.numeric(Central.Air) + log(X12.SF) + Baths + Kitchen.AbvGr + as.numeric(Kitchen.Qual) + 
+    as.numeric(Functional) + Fireplaces + Garage.Cars + as.numeric(Paved.Drive)^2 + as.numeric(Bsmt.YN)*as.numeric(Bsmt.Exposure), 
+                 data = data)
+
+X.scaled = scale(unlist(X), center = TRUE, scale = TRUE)
+Y = unlist(data[, 3])
 
 housing.blasso.RJ = blasso(X.scaled, Y, RJ = TRUE, verb=0)
-
+ypred.blasso.RJ = mean(housing.blasso.RJ$mu) + as.matrix(test.scaled) %*% apply(housing.blasso.RJ$beta, 2, mean)
 summary(housing.blasso.RJ)$coef
 
 # prediction:
@@ -558,19 +790,34 @@ X.scaled[,2:15] = scale(X[,2:15], center =college.ridge.cv$xm[c(-1,-16)],
                         scale = college.ridge.cv$scales[c(-1,-16)])
                         
 # RJ = FALSE
-college.blasso = blasso(X.scaled, Y, RJ = FALSE, verb=0) ypred.blasso = mean(college.blasso$mu) +
-                        as.matrix(test.scaled) %*% apply(college.blasso$beta, 2, mean) rmse.blasso = rmse(exp(ctest$Apps), exp(ypred.blasso))
+# college.blasso = blasso(X.scaled, Y, RJ = FALSE, verb=0) 
+# ypred.blasso = mean(college.blasso$mu) +
+#                as.matrix(test.scaled) %*% apply(college.blasso$beta, 2, mean) 
+# rmse.blasso = rmse(exp(ctest$Apps), exp(ypred.blasso))
 # model selection with RJ = TRUE
 college.blasso.RJ = blasso(X.scaled, Y, RJ = TRUE, verb=0)
-
 ypred.blasso.RJ = mean(college.blasso.RJ$mu) + as.matrix(test.scaled) %*% apply(college.blasso.RJ$beta, 2, mean)
 rmse.blasso.RJ = rmse(exp(ctest$Apps), exp(ypred.blasso.RJ)) 
 summary(college.blasso.RJ)$coef
 ```
 
 
+```{r}
+model.lasso = glmnet(X.train, log(data_train$price), alpha=1)
+cv.lasso = cv.glmnet(X.train, log(data_train$price), alpha=1)
+yhat.lasso = exp(predict(model.lasso, s=cv.lasso$lambda.min, type="response", newx = X.test))
+
+sqrt(mean(((yhat.lasso)-data_test$price)^2))
 
 
+# Ridge for the simplified model (from BIC)
+
+model.ridge = glmnet(X.train, log(data_train$price), alpha=0)
+cv.ridge = cv.glmnet(X.train, log(data_train$price), alpha=0)
+yhat.ridge = predict(model.ridge, s=cv.ridge$lambda.min, type="response", newx = X.test)
+
+sqrt(mean((exp(yhat.ridge)-data_test$price)^2))
+```
 
 
 
