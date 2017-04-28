@@ -205,9 +205,9 @@ summary(boost)
 
 model.BIC=lm(formula = log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 + 
                Overall.Qual + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
-               Bsmt.Exposure + log(Total.Bsmt.SF) + Heating.QC + Central.Air + 
-               Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + 
-               Fireplaces + Garage.Cars + Paved.Drive + log(Pool.Area) + 
+               Bsmt.Exposure + log(Total.Bsmt.SF) + Central.Air + 
+               Baths + Kitchen.AbvGr + Kitchen.Qual + Functional + 
+               Fireplaces + Garage.Cars + Paved.Drive +
                log(TotalSq), data = data_train)
 summary(model.BIC)
 plot(model.BIC)
