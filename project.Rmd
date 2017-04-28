@@ -44,42 +44,15 @@ which(miss_prop>0.5) # four features have greater than 50% of data "missing" -- 
 
 
 ```{r}
-levels(ames_train$Neighborhood)
 
-# [1] "Blmngtn" "Blueste" "BrDale"  "BrDale" "ClearCr" "CollgCr" "Crawfor" "Edwards" "Gilbert" "Greens"  "GrnHill"
-# [12] "IDOTRR"  "Landmrk" "MeadowV" "Mitchel" "NAmes"   "NoRidge" "NPkVill" "NridgHt" "NWAmes"  "OldTown" "Sawyer" 
-# [23] "SawyerW" "Somerst" "StoneBr" "SWISU"   "Timber"  "Veenker"
+neighborhoods = unique(data_train$Neighborhood)
 
-ames_train$distance<-0
+distance = c(1.0, 2.8, 2.8, 5.0, 2.8, 2.4, 3.0, 2.5, 4.5, 2.5, 3.0, 2.7, 1.0, 2.0, 2.7, 3.2, 2.9, 4.0, 3.2, 3.9, 1.0, 1.8, 1.3, 3.6, 2.3, 1.1, 3.4, 1.5)
 
-ames_train$distance[ames_train$Neighborhood=="Blmngtn"] = 1
-ames_train$distance[ames_train$Neighborhood=="Blueste"] = 1
-ames_train$distance[ames_train$Neighborhood=="BrDale"] = 1
-ames_train$distance[ames_train$Neighborhood=="BrDale"] = 1
-ames_train$distance[ames_train$Neighborhood=="ClearCr"] = 1
-ames_train$distance[ames_train$Neighborhood=="CollgCr"] = 1
-ames_train$distance[ames_train$Neighborhood=="Crawfor"] = 1
-ames_train$distance[ames_train$Neighborhood=="Edwards"] = 1
-ames_train$distance[ames_train$Neighborhood=="Gilbert"] = 1
-ames_train$distance[ames_train$Neighborhood=="Greens"] = 1
-ames_train$distance[ames_train$Neighborhood=="GrnHill"] = 1
-ames_train$distance[ames_train$Neighborhood=="IDOTRR"] = 1
-ames_train$distance[ames_train$Neighborhood=="Landmrk"] = 1
-ames_train$distance[ames_train$Neighborhood=="MeadowV"] = 1
-ames_train$distance[ames_train$Neighborhood=="Mitchel"] = 1
-ames_train$distance[ames_train$Neighborhood=="NAmes"] = 1
-ames_train$distance[ames_train$Neighborhood=="NoRidge"] = 1
-ames_train$distance[ames_train$Neighborhood=="NPkVill"] = 1
-ames_train$distance[ames_train$Neighborhood=="NridgHt"] = 1
-ames_train$distance[ames_train$Neighborhood=="NWAmes"] = 1
-ames_train$distance[ames_train$Neighborhood=="OldTown"] = 1
-ames_train$distance[ames_train$Neighborhood=="Sawyer"] = 1
-ames_train$distance[ames_train$Neighborhood=="SawyerW"] = 1
-ames_train$distance[ames_train$Neighborhood=="Somerst"] = 1
-ames_train$distance[ames_train$Neighborhood=="StoneBr"] = 1
-ames_train$distance[ames_train$Neighborhood=="SWISU"] = 1
-ames_train$distance[ames_train$Neighborhood=="Timber"] = 1
-ames_train$distance[ames_train$Neighborhood=="Veenker"] = 1
+
+
+
+
 
 
 ```
@@ -235,6 +208,22 @@ performance<- function(Y, Yhat){
 ```{r}
 library(MASS)
 
+# Base model with transformed predictors 
+ model=lm(price ~ MS.SubClass + MS.Zoning + log(Lot.Frontage) + log(Lot.Area) +  Street + Alley + Lot.Shape + Land.Contour + Lot.Config + Land.Slope + Neighborhood + Condition.1  + Bldg.Type + House.Style + Overall.Qual + Overall.Cond + HouseAge +   Roof.Style + Roof.Matl + Exterior.1st + Mas.Vnr.Type + log(1+Mas.Vnr.Area) + Exter.Cond + Exter.Qual +   Foundation + Bsmt.Qual + Bsmt.Cond + Bsmt.Exposure + Total.Bsmt.SF + Heating + Heating.QC + Central.Air + Electrical + log(X12.SF) + log(1+Low.Qual.Fin.SF) + Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + Fireplaces + Fireplace.Qu + Garage.Type + Garage.Finish + Garage.Cars + Garage.Cond + Garage.Qual + Paved.Drive + log(1+Pool.Area) + Pool.QC + Fence + Misc.Val + Mo.Sold  +Yr.Sold + Sale.Type  + TotalSq, data=data_train)
+
+
+# Boxcox (indicates that log is decent)
+l<-boxcox(model)
+expo<-round(l$x[which.max(l$y)],2)
+
+## Current model
+## log(Lot.Frontage) currently removed to have more data points (was not included when left in the model with BIC)
+model.0=lm(log(price) ~ MS.SubClass + MS.Zoning  + log(Lot.Area) +  Street + Alley + Lot.Shape + Land.Contour + Lot.Config + Land.Slope + Neighborhood + Condition.1  + Bldg.Type + House.Style + Overall.Qual + Overall.Cond + HouseAge +   Roof.Style + Roof.Matl + Exterior.1st +  Mas.Vnr.Type + log(1+Mas.Vnr.Area) + Exter.Cond + Exter.Qual +   Foundation + Bsmt.Qual + Bsmt.Cond + Bsmt.Exposure + log(Total.Bsmt.SF) + Bsmt.YN+ Heating + Heating.QC + Central.Air  + log(1+Low.Qual.Fin.SF) + Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + Fireplaces + Fireplace.Qu + Garage.Type + Garage.Finish + Garage.Cars +Garage.Qual+Garage.Cond  + Paved.Drive + log(Pool.Area) + Pool.QC + Fence + Misc.Val + Mo.Sold  +Yr.Sold + Sale.Type  + log(TotalSq) + Pool.YN , data=data_train)
+
+summary(model.0)
+plot(model.0)
+
+
 model.BIC=lm(formula = log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 + 
                Overall.Qual + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
                Bsmt.Exposure + log(Total.Bsmt.SF) + Heating.QC + Central.Air + 
@@ -243,7 +232,69 @@ model.BIC=lm(formula = log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 +
                log(TotalSq), data = data_train)
 summary(model.BIC)
 plot(model.BIC)
+
+modelinteract = lm(log(price) ~ log(Lot.Area) + Condition.1 + Overall.Qual:Baths:Neighborhood + Overall.Qual:Baths + Overall.Qual:Neighborhood + Overall.Qual + Baths + Neighborhood + Overall.Qual:Baths:log(Total.Bsmt.SF) + Overall.Qual:log(Total.Bsmt.SF) + Overall.Qual:Garage.Cars:log(Total.Bsmt.SF):log(TotalSq) + Overall.Qual:Garage.Cars:log(TotalSq) + Overall.Qual:Garage.Cars + Overall.Qual:log(TotalSq) + Garage.Cars:log(Total.Bsmt.SF):log(TotalSq) + Garage.Cars:log(TotalSq) + log(Total.Bsmt.SF):log(TotalSq) + Garage.Cars + log(Total.Bsmt.SF) + log(TotalSq) + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + Bsmt.Exposure + Heating.QC + Central.Air + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + Fireplaces + Paved.Drive + log(Pool.Area), data = data_train)
+
+model.interact.reduced=lm(log(price) ~ log(Lot.Area) + Condition.1 + Overall.Qual + 
+    Baths + Neighborhood + Garage.Cars + log(Total.Bsmt.SF) + 
+    log(TotalSq) + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
+    Bsmt.Exposure + Heating.QC + Central.Air + Bedroom.AbvGr + 
+    Kitchen.AbvGr + Kitchen.Qual + Functional + Fireplaces + 
+    Paved.Drive + Overall.Qual:Garage.Cars + Overall.Qual:log(TotalSq) + 
+    Garage.Cars:log(TotalSq) + Overall.Qual:Garage.Cars:log(TotalSq), 
+    data = data_train)
+summary(model.interact.reduced)
+plot(model.interact.reduced)
+
+
+results <- summary(model.interact.reduced) 
+
+id<-results$coefficients[,4]<1e-6
+
+sum(id)
+
+aa<-results$coefficients[id,]
+
+
+step(modelinteract, k=log(nrow(data_train)))
+library(tree)
+tree = tree(log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 + 
+               Overall.Qual + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
+               Bsmt.Exposure + log(Total.Bsmt.SF) + Heating.QC + Central.Air + 
+               Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + 
+               Fireplaces + Garage.Cars + Paved.Drive + log(Pool.Area) + 
+               log(TotalSq), data = data_train)
+# use cross-validation to prune
+cv.tree = cv.tree(tree)
+plot(cv.tree$size, cv.tree$dev, type='b')
+bb = cv.tree$size[which.min(cv.tree$dev)]
+
+# prune the tree for the size that is optimal based on CV
+prune.tree=prune.tree(tree, best=bb)
+
+# plot the pruned tree
+plot(prune.tree)
+text(prune.tree, pretty=0)
+prune.tree
+
+summary(model.BIC)
+plot(model.BIC)
+
+termplot(model.BIC, partial.resid = TRUE, col.res = "purple", cex = 0.5,
+         rug = T, se = T, smooth = panel.smooth)
+
+
+
+# There are 3 high leverage points - may want to exclude them
+hh<-hatvalues(model.BIC)
+id<-which(hh==1)
+
+plot(hatvalues(model.BIC), type = "h")
+
+
 ```
+
+
 
 
 ```{r}
@@ -343,6 +394,18 @@ Yhat = predict(model, newdata=data_test, interval="predict")
 Yhat = exp(Yhat)
 
 
+performance(Y, Yhat)
+
+
+#For calculating Top 10 undervalued and overvalued homes
+over.under = data.frame(value.diff = Yhat/Y)
+undervalued=dplyr::top_n(over.under, 10, value.diff)
+overvalued=dplyr::top_n(over.under, 10, desc(value.diff))
+top.10 = data.frame(under = dplyr::arrange(undervalued, desc(value.diff)), over = dplyr::arrange(overvalued,value.diff))
+library(knitr)
+kable(top.10, col.names=c("Top 10 Undervalued Houses", "Top 10 Overvalued Houses"))
+
+
 # name dataframe as predictions! DO NOT CHANGE
 predictions = as.data.frame(Yhat)
 predictions$PID = data_test$PID
@@ -358,25 +421,6 @@ max(abs(Y-Yhat))
 mean(abs(Y-Yhat[1]))
   
 sqrt(mean((Y-Yhat)^2))
-```
-
-### Part II: Complex Model
-
-In this part you may go all out for constructing a best fitting model for predicting housing prices using methods that we have covered this semester.  You should feel free to to create any new variables (such as quadratic, interaction, or indicator variables, splines, etc). The variable `TotalSq = X1st.Flr.SF+X2nd.Flr.SF` was added to the dataframe (that does not include basement area, so you may improve on this. A relative grade is assigned by comparing your fit on the test set to that of your fellow students with bonus points awarded to those who substantially exceed their fellow students and point reductions occurring for models which fit exceedingly poorly.  
-
-Update your predictions using your complex model to provide point estimates and CI.
-
-```{r}
-model.interact.reduced=lm(log(price) ~ log(Lot.Area) + Condition.1 + Overall.Qual + 
-    Baths + Neighborhood + Garage.Cars + log(Total.Bsmt.SF) + 
-    log(TotalSq) + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
-    Bsmt.Exposure + Heating.QC + Central.Air + Bedroom.AbvGr + 
-    Kitchen.AbvGr + Kitchen.Qual + Functional + Fireplaces + 
-    Paved.Drive + Overall.Qual:Garage.Cars + Overall.Qual:log(TotalSq) + 
-    Garage.Cars:log(TotalSq) + Overall.Qual:Garage.Cars:log(TotalSq), 
-    data = data_train)
-summary(model.interact.reduced)
-plot(model.interact.reduced)
 ```
 
 ```{r}
@@ -399,16 +443,6 @@ area.plot = treemap(tree.data, index=c("price.bin", "price"), vSize="TotalSq", t
 data_train$Overall.Qual = as.numeric(data_train$Overall.Qual)
 quality.plot = ggplot(data_train, aes(x = Overall.Qual, y=price)) + geom_smooth(color="gold") + geom_count(color="red3") + theme_bw() + labs(x="Overall Quality", y="Price", title="Price by Overall Quality") + theme(plot.title = element_text(hjust=0.5))
 suppressMessages(plot(quality.plot))
-```
-
-```{r}
-#For calculating Top 10 undervalued and overvalued homes
-over.under = data.frame(value.diff = Yhat/Y)
-undervalued=dplyr::top_n(over.under, 10, value.diff)
-overvalued=dplyr::top_n(over.under, 10, desc(value.diff))
-top.10 = data.frame(under = dplyr::arrange(undervalued, desc(value.diff)), over = dplyr::arrange(overvalued,value.diff))
-library(knitr)
-kable(top.10, col.names=c("Top 10 Undervalued Houses", "Top 10 Overvalued Houses"))
 ```
 
 

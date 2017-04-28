@@ -12,9 +12,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 ## 1. Exploratory data analysis (20 points)
-Instruction: You must include three correctly labeled graphs and an explanation that highlight the most important features that went into your model building.
 
-We first read in the training data and performed basic checks to identify fields with (truly) missing data and potential abnormalities. The variable lot frontage was identified to have 282 or 18.8% missing entries. We removed this predictor, and verified a posteriori that adding it in would not lead to better model predictions.
+We first performed basic checks to identify fields with (truly) missing data and potential abnormalities. The variable lot frontage was identified to have 282 or 18.8% missing entries. We removed this predictor, and verified at a latern stage that adding it in would not lead to better model predictions.
 
 ```{r read-data, echo=FALSE, message=FALSE, warning=FALSE}
 library(dplyr)
@@ -131,11 +130,16 @@ We see that TBD
 Our third plot shows the relationship between a house’s price and its overall quality, rated on a scale from 1 (Very Poor) to 10 (Very Excellent).
 
 
-```{r clusters}
+```{r clusters, echo=FALSE}
+library(ggplot2)
+ptrain_data = data_train
+ptrain_data = ptrain_data%>%mutate(Overall.Qual.level1 = ifelse(Overall.Qual %in% c(1,2,3,4), "low", Overall.Qual))%>%
+ mutate(Overall.Qual.level2 = ifelse(Overall.Qual.level1 %in% c("5","6","7"),"med",Overall.Qual.level1))%>%
+ mutate(Overall.Qual.level3 = ifelse(Overall.Qual.level2 %in% c("8","9","10"),"high",Overall.Qual.level2))
+#sum(ptrain_data$Overall.Qual.level3 %in% c("low","med","high"))
 
-data_train$Overall.Qual = as.numeric(data_train$Overall.Qual)
-quality.plot = ggplot(data_train, aes(x = Overall.Qual, y=price)) + geom_smooth(color="gold") + geom_count(color="red3") + theme_bw() + labs(x="Overall Quality", y="Price", title="Price by Overall Quality") + theme(plot.title = element_text(hjust=0.5))
-suppressMessages(plot(quality.plot))
+f = qplot(x = TotalSq, y = price, data = ptrain_data, color = factor(Overall.Qual.level3))
+f + labs(color='Overall Quality') + xlab("Total Square Feet") + ylab("Price")+ ggtitle("Sale Price versus Total Square Feet by Overall Quality")
 
 ```
 
@@ -143,7 +147,7 @@ suppressMessages(plot(quality.plot))
 The red clusters represent the counts of the number of observations that have a certain price and quality, with fatter clusters representing more observations having that price and quality. The gold smooth is a spline fitted with GAM (not by us, but by the geom_smooth function) that runs through the medians of the quality ratings, accompanied by a confidence band in transparent gray. It is interesting to note that most observations fall into the $100,000-300,000 range, as well as the 5 to 8 quality range, which we can observe due to the fatter clusters in these areas. We can also see that the confidence bands through this region are understandably at their most narrow, whereas the bands widen at the Very Poor end of the range, due to there being very few observations at that end. Finally, it is easy to see that there is a non-linear trend in price that occurs around the 7.5 mark, where the slope of the curve steepens. While it is possible that the best fit could be achieved by a spline, logging the price variable seemed to do the trick in correcting for this non-linearity. We did not log Overall Quality, due to its being an integer.
 
 
-2. Development and assessment of an initial model from Part I (10 points)
+## 2. Development and assessment of an initial model from Part I (10 points)
 
 Initial Model and Model Selection
 
@@ -299,7 +303,19 @@ sqrt(mean((Y-Yhat)^2))
 ```
 
 
-3. Development of the final model (20 points)
+
+## 3. Development of the final model (20 points)
+
+We tried a range of different approaches for a more complex model. Among others, we evaluated tree models, bagging, boosting and random forests, as well as Lasso and Ridge. Based on RMSE however, none of these options was able to outperform a linear model with interaction terms.
+
+In consequence, the final model contains 22 different variables, two 2-way interactions and one 3-way interaction. 
+
+The 10 most imortant varaiables are summarized in the following table
+
+```{r}
+
+```
+
 
 * Final model: must include a summary table
 
