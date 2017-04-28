@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-
+d
 ## 1. Exploratory data analysis (20 points)
 
 We first performed basic checks on the training data to identify predictors with (truly) missing entries and potential abnormalities. The variable lot frontage was identified to have 282 or 18.8% missing entries. We removed this predictor, and verified at a later stage that adding it in would not lead to better model predictions.
