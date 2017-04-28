@@ -126,8 +126,7 @@ With respect to location, we note that Ames is a college town built around Iowa 
 
 We see that TBD
 
-
-Our third plot shows the relationship between a house’s price and its overall quality, rated on a scale from 1 (Very Poor) to 10 (Very Excellent).
+Our third plot shows the relationship between a sales price and total square footage, stratified by overall quality of the house. We see that there are different slopes in the relationship between sales price and total square footage, indicating the need for interaction terms between these variables (indeed, the more complex model contains such interactions).
 
 
 ```{r clusters, echo=FALSE}
