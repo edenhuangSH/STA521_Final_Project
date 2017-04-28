@@ -137,9 +137,8 @@ ptrain_data = ptrain_data%>%mutate(Overall.Qual.level1 = ifelse(Overall.Qual %in
  mutate(Overall.Qual.level3 = ifelse(Overall.Qual.level2 %in% c("8","9","10"),"high",Overall.Qual.level2))
 #sum(ptrain_data$Overall.Qual.level3 %in% c("low","med","high"))
 
-f = qplot(x = TotalSq, y = price, data = ptrain_data, color = factor(Overall.Qual.level3)) + theme_classic() + scale_color_manual(values = c("grey15", "gold", "red3"))
+f = qplot(x = TotalSq, y = price, data = ptrain_data, color = factor(Overall.Qual.level3)) + theme_classic()
 f + labs(color='Overall Quality') + xlab("Total Square Feet") + ylab("Price")+ ggtitle("Sale Price versus Total Square Feet by Overall Quality")
-
 ```
 
 
