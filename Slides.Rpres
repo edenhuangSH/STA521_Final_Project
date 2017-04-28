@@ -86,6 +86,20 @@ data_train$Bsmt.Exposure<-droplevels(data_train$Bsmt.Exposure)
 data_train$Pool.Area<-data_train$Pool.Area+1
 data_train$Total.Bsmt.SF<-data_train$Total.Bsmt.SF+1
 
+theme_light = function (base_size = 11, base_family = "") 
+{
+    theme_grey(base_size = base_size, base_family = base_family) %+replace% 
+        theme(panel.background = element_rect(fill = "lavender", 
+            colour = NA), panel.border = element_rect(fill = NA, 
+            colour = "darkslateblue", size = 0.5), panel.grid.major = element_line(colour = "lavenderblush3", 
+            size = 0.25), panel.grid.minor = element_line(colour = "lavenderblush3", 
+            size = 0.125), axis.ticks = element_line(colour = "darkslateblue", 
+            size = 0.25), legend.key = element_rect(fill = "white", 
+            colour = NA), strip.background = element_rect(fill = "darkslateblue", 
+            colour = NA), strip.text = element_text(colour = "white", 
+            size = rel(0.8)), complete = TRUE)
+}
+
 library(ggplot2)
 library(treemap)
 
@@ -123,6 +137,17 @@ Rejected Graphic
 ==========================================================
 title:false
 ```{r myplot3,echo=FALSE,fig.align='center',fig.width=8,fig.height=5,dpi=300,out.width="1920px",out.height="1100px"}
+theme_bw = function (base_size = 11, base_family = "") 
+{
+    theme_grey(base_size = base_size, base_family = base_family) %+replace% 
+        theme(panel.background = element_rect(fill = "aliceblue", 
+            colour = NA), panel.border = element_rect(fill = NA, 
+            colour = "Navy"), panel.grid.major = element_line(colour = "cornflowerblue"), 
+            panel.grid.minor = element_line(colour = "cornflowerblue", 
+                size = 0.25), strip.background = element_rect(fill = "cornflowerblue", 
+                colour = "Navy"), legend.key = element_rect(fill = "white", 
+                colour = NA), complete = TRUE)
+}
 data_train$Overall.Qual = as.numeric(data_train$Overall.Qual)
 quality.plot = ggplot(data_train, aes(x = Overall.Qual, y=price)) + geom_smooth(color="gold") + geom_count(color="red3") + theme_bw() + labs(x="Overall Quality", y="Price", title="Price by Overall Quality") + theme(plot.title = element_text(hjust=0.5))
 suppressMessages(plot(quality.plot))
