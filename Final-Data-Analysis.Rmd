@@ -192,6 +192,17 @@ performance<- function(Y, Yhat){
 ```{r}
 library(MASS)
 
+library(gbm)
+
+boost = gbm(log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 + 
+               Overall.Qual + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
+               Bsmt.Exposure + log(Total.Bsmt.SF) + Heating.QC + Central.Air + 
+               Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + 
+               Fireplaces + Garage.Cars + Paved.Drive + log(Pool.Area) + 
+               log(TotalSq), data = data_train, distribution="gaussian", n.trees=5000, interaction.depth = 1, shrinkage=0.01, verbose = F)
+
+summary(boost)
+
 model.BIC=lm(formula = log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 + 
                Overall.Qual + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
                Bsmt.Exposure + log(Total.Bsmt.SF) + Heating.QC + Central.Air + 
@@ -294,7 +305,7 @@ Y = data_test$price
 
 
 
-Yhat = predict(model, newdata=data_test, interval="predict")
+Yhat = predict(model.BIC, newdata=data_test, interval="predict")
 
 # depending on the response transformation
 Yhat = exp(Yhat)
@@ -348,7 +359,7 @@ library(treemap)
 tree.data = data_train %>% mutate(price.bin = ifelse(price <= 50000, "<= $50,000", ifelse(price > 50000 & price <= 100000, "$50,000-100,000", ifelse(price > 100000 & price <= 200000, "$100,000-200,000", ifelse(price > 200000 & price <= 300000, "$200,000-300,000", ifelse(price > 300000 & price <= 400000, "$300,000-400,000", ifelse(price > 400000 & price <= 500000, "$400,000-500,000", "> $500,000")))))))
 tree.data = as.data.frame(tree.data)
 
-area.plot = treemap(tree.data, index=c("price.bin", "price"), vSize="Lot.Area", type="index", palette="YlGn", algorithm="pivotSize", title="Effect of Lot Area on Price Range", fontsize.title = 14)
+area.plot = treemap(tree.data, index=c("price.bin", "price"), vSize="Lot.Area", type="index", palette="YlGn", algorithm="squarified", title="Effect of Lot Area on Price Range", fontsize.title = 14, fun.aggregate="mean")
 
 area.plot = treemap(tree.data, index=c("price.bin", "price"), vSize="TotalSq", type="index", palette="Oranges", algorithm="pivotSize", title="Effect of Total Square Footage on Price Range", fontsize.title = 14)
 
@@ -360,7 +371,7 @@ suppressMessages(plot(quality.plot))
 
 ```{r}
 #For calculating Top 10 undervalued and overvalued homes
-over.under = data.frame(value.diff = Yhat/Y)
+over.under = data.frame(value.diff = Yhat[,1]/Y)
 undervalued=dplyr::top_n(over.under, 10, value.diff)
 overvalued=dplyr::top_n(over.under, 10, desc(value.diff))
 top.10 = data.frame(under = dplyr::arrange(undervalued, desc(value.diff)), over = dplyr::arrange(overvalued,value.diff))
@@ -368,11 +379,112 @@ library(knitr)
 kable(top.10, col.names=c("Top 10 Undervalued Houses", "Top 10 Overvalued Houses"))
 ```
 
+```{r}
+## Prepare validation data
+load("ames_validation.Rdata")
+
+data=ames_validation
+
+data <- data  %>%  
+  #filter(!is.na(Lot.Frontage)) %>% 
+  mutate(MS.SubClass= factor(MS.SubClass)) %>%
+  mutate(Alley =  factor(Alley, levels = levels(addNA(Alley)), labels = c(levels(Alley), "None"), exclude = NULL)) %>%
+  mutate(HouseAge = Yr.Sold- pmax(Year.Built, Year.Remod.Add))  %>%
+  #filter(!is.na(Mas.Vnr.Area))  %>% 
+  mutate(Bsmt.YN = 1*(!is.na(Bsmt.Qual))) %>%
+  mutate(Bsmt.Qual =  factor(Bsmt.Qual, levels = levels(addNA(Bsmt.Qual)), labels = c(levels(Bsmt.Qual), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Qual = relevel(Bsmt.Qual, ref="None")) %>%
+  mutate(Bsmt.Cond =  factor(Bsmt.Cond, levels = levels(addNA(Bsmt.Cond)), labels = c(levels(Bsmt.Cond), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Cond = relevel(Bsmt.Cond, ref="None")) %>%
+  mutate(Bsmt.Exposure =  factor(Bsmt.Exposure, levels = levels(addNA(Bsmt.Exposure)), labels = c(levels(Bsmt.Exposure), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Exposure = relevel(Bsmt.Exposure, ref="None")) %>%
+  mutate(BsmtFin.Type.1=  factor(BsmtFin.Type.1, levels = levels(addNA(BsmtFin.Type.1)), labels = c(levels(BsmtFin.Type.1), "None"), exclude = NULL)) %>%
+  mutate(BsmtFin.Type.1 = relevel(BsmtFin.Type.1, ref="None")) %>%
+  mutate(BsmtFin.Type.2=  factor(BsmtFin.Type.2, levels = levels(addNA(BsmtFin.Type.2)), labels = c(levels(BsmtFin.Type.2), "None"), exclude = NULL)) %>%
+  mutate(BsmtFin.Type.2 = relevel(BsmtFin.Type.2, ref="None")) %>%
+  mutate(X12.SF= X1st.Flr.SF+ X2nd.Flr.SF)  %>%   
+  #filter(!is.na(Bsmt.Full.Bath)) %>%
+  #filter(!is.na(Bsmt.Half.Bath)) %>%
+  mutate(Baths = Bsmt.Full.Bath + 0.5*Bsmt.Half.Bath + Full.Bath + 0.5*Half.Bath) %>%
+  mutate(Fireplace.YN = 1*(Fireplaces>0)) %>%
+  mutate(Fireplace.Qu =  factor(Fireplace.Qu, levels = levels(addNA(Fireplace.Qu)), labels = c(levels(Fireplace.Qu), "None"), exclude = NULL)) %>%
+  mutate(Fireplace.Qu = relevel(Fireplace.Qu, ref="None")) %>%
+  mutate(Garage.YN = 1*(!is.na(Garage.Cond))) %>%
+  mutate(Garage.Type =  factor(Garage.Type, levels = levels(addNA(Garage.Type)), labels = c(levels(Garage.Type), "None"), exclude = NULL)) %>%
+  mutate(Garage.Type = relevel(Garage.Type, ref="None")) %>%
+  mutate(Garage.Finish =  factor(Garage.Finish, levels = levels(addNA(Garage.Finish)), labels = c(levels(Garage.Finish), "None"), exclude = NULL)) %>%
+  mutate(Garage.Finish = relevel(Garage.Finish, ref="None")) %>%
+  mutate(Garage.Qual =  factor(Garage.Qual, levels = levels(addNA(Garage.Qual)), labels = c(levels(Garage.Qual), "None"), exclude = NULL)) %>%
+  mutate(Garage.Qual = relevel(Garage.Qual, ref="None")) %>%
+  mutate(Garage.Cond =  factor(Garage.Cond, levels = levels(addNA(Garage.Cond)), labels = c(levels(Garage.Cond), "None"), exclude = NULL)) %>%
+  mutate(Garage.Cond = relevel(Garage.Cond, ref="None")) %>%
+  mutate(Porch.Area = Wood.Deck.SF+ Open.Porch.SF+Enclosed.Porch+X3Ssn.Porch + Screen.Porch) %>%
+  mutate(Pool.YN = 1*(Pool.Area>0)) %>%
+  mutate(Pool.QC =  factor(Pool.QC, levels = levels(addNA(Pool.QC)), labels = c(levels(Pool.QC), "None"), exclude = NULL)) %>%
+  mutate(Pool.QC = relevel(Pool.QC, ref="None")) %>%
+  mutate(Fence =  factor(Fence, levels = levels(addNA(Fence)), labels = c(levels(Fence), "None"), exclude = NULL)) %>%
+  mutate(Misc.Feature =  factor(Misc.Feature, levels = levels(addNA(Misc.Feature)), labels = c(levels(Misc.Feature), "None"), exclude = NULL)) %>%
+  mutate(Mo.Sold = as.factor(Mo.Sold)) %>%
+  mutate(Yr.Sold = as.factor(Yr.Sold)) %>%
+  dplyr::select(-Garage.Yr.Blt) %>%
+  mutate(Condition.1 = as.character(Condition.1)) %>%
+  mutate(Kitchen.Qual=plyr::mapvalues(Kitchen.Qual, from = c("Po", "Fa", "TA","Gd", "Ex" ), to = c("1", "2", "3", "4", "5"))) %>%
+  mutate(Kitchen.Qual = as.numeric(as.character(Kitchen.Qual))) %>%
+  mutate(Heating.QC=plyr::mapvalues(Heating.QC, from = c("Po", "Fa", "TA","Gd", "Ex" ), to = c("1", "2", "3", "4", "5"))) %>%
+  mutate(Heating.QC = as.numeric(as.character(Heating.QC))) %>%
+  mutate(Bsmt.Qual = droplevels(Bsmt.Qual)) %>%
+  mutate(Functional = droplevels(Functional)) %>%
+  mutate(Roof.Matl = droplevels(Roof.Matl))
+
+
+
+
+ind_rail<-which(data$Condition.1=="RRNn" | data$Condition.1=="RRAn" | data$Condition.1=="RRNe" | data$Condition.1=="RRAe")
+ind_park<-which(data$Condition.1=="PosN" | data$Condition.1=="PosA")
+data$Condition.1[ind_rail]<-"Rail"
+data$Condition.1[ind_park]<-"Park"
+
+
+
+data = data %>% 
+  mutate(Condition.1 = factor(Condition.1)) %>%
+  mutate(Condition.1 = relevel(Condition.1, ref="Norm")) 
+
+data_validation=data
+
+
+data_validation$Bsmt.Exposure[which(data_validation$Bsmt.Exposure=="")]<-"None"
+data_validation$Bsmt.Exposure<-droplevels(data_validation$Bsmt.Exposure)
+
+
+
+data_validation$Pool.Area<-data_validation$Pool.Area+1
+data_validation$Total.Bsmt.SF<-data_validation$Total.Bsmt.SF+1
+
+
+# extract the truth
+Y = data_validation$price
+
+# make prediction based on specific model
+
+
+
+Yhat = predict(model.BIC, newdata=data_validation, interval="predict")
+
+# depending on the response transformation
+Yhat = exp(Yhat)
+
+
+# name dataframe as predictions! DO NOT CHANGE
+predictions = as.data.frame(Yhat)
+predictions$PID = data_validation$PID
+
+save(predictions, file="predict.Rdata")
+Yhat = predict(model.BIC, newdata=data_validation, interval="predict")
+```
+
 
 You may iterate here as much as you like exploring different models until you are satisfied with your results.
-
-
-
 
 ### Part III: Write Up
 
