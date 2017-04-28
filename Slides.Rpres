@@ -1,0 +1,121 @@
+Stat 521 Final Project
+========================================================
+author: homoBayesians (Thomas Fleming, Eden Huang, Blaire Li, Marc Ryser)
+date: May 1, 2017 
+autosize: true
+
+Models
+========================================================
+
+For more details on authoring R presentations please visit <https://support.rstudio.com/hc/en-us/articles/200486468>.
+
+- Bullet 1
+- Bullet 2
+- Bullet 3
+
+Data Visualizations
+========================================================
+
+```{r, echo=FALSE}
+library(dplyr)
+library(tidyr)
+load("ames_train.Rdata")
+
+# Did not remove any NA entries in Lot.frontage
+
+data=ames_train
+
+data <- data  %>%
+  #filter(!is.na(Lot.Frontage)) %>% 
+  mutate(MS.SubClass= factor(MS.SubClass)) %>%
+  mutate(Alley =  factor(Alley, levels = levels(addNA(Alley)), labels = c(levels(Alley), "None"), exclude = NULL)) %>%
+  mutate(HouseAge = Yr.Sold- pmax(Year.Built, Year.Remod.Add))  %>%
+  filter(!is.na(Mas.Vnr.Area))  %>% 
+  mutate(Bsmt.YN = 1*(!is.na(Bsmt.Qual))) %>%
+  mutate(Bsmt.Qual =  factor(Bsmt.Qual, levels = levels(addNA(Bsmt.Qual)), labels = c(levels(Bsmt.Qual), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Qual = relevel(Bsmt.Qual, ref="None")) %>%
+  mutate(Bsmt.Cond =  factor(Bsmt.Cond, levels = levels(addNA(Bsmt.Cond)), labels = c(levels(Bsmt.Cond), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Cond = relevel(Bsmt.Cond, ref="None")) %>%
+  mutate(Bsmt.Exposure =  factor(Bsmt.Exposure, levels = levels(addNA(Bsmt.Exposure)), labels = c(levels(Bsmt.Exposure), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Exposure = relevel(Bsmt.Exposure, ref="None")) %>%
+  mutate(BsmtFin.Type.1=  factor(BsmtFin.Type.1, levels = levels(addNA(BsmtFin.Type.1)), labels = c(levels(BsmtFin.Type.1), "None"), exclude = NULL)) %>%
+  mutate(BsmtFin.Type.1 = relevel(BsmtFin.Type.1, ref="None")) %>%
+  mutate(BsmtFin.Type.2=  factor(BsmtFin.Type.2, levels = levels(addNA(BsmtFin.Type.2)), labels = c(levels(BsmtFin.Type.2), "None"), exclude = NULL)) %>%
+  mutate(BsmtFin.Type.2 = relevel(BsmtFin.Type.2, ref="None")) %>%
+  mutate(X12.SF= X1st.Flr.SF+ X2nd.Flr.SF)  %>%   
+  filter(!is.na(Bsmt.Full.Bath)) %>%
+  filter(!is.na(Bsmt.Half.Bath)) %>%
+  mutate(Baths = Bsmt.Full.Bath + 0.5*Bsmt.Half.Bath + Full.Bath + 0.5*Half.Bath) %>%
+  mutate(Fireplace.YN = 1*(Fireplaces>0)) %>%
+  mutate(Fireplace.Qu =  factor(Fireplace.Qu, levels = levels(addNA(Fireplace.Qu)), labels = c(levels(Fireplace.Qu), "None"), exclude = NULL)) %>%
+  mutate(Fireplace.Qu = relevel(Fireplace.Qu, ref="None")) %>%
+  mutate(Garage.YN = 1*(!is.na(Garage.Cond))) %>%
+  mutate(Garage.Type =  factor(Garage.Type, levels = levels(addNA(Garage.Type)), labels = c(levels(Garage.Type), "None"), exclude = NULL)) %>%
+  mutate(Garage.Type = relevel(Garage.Type, ref="None")) %>%
+  mutate(Garage.Finish =  factor(Garage.Finish, levels = levels(addNA(Garage.Finish)), labels = c(levels(Garage.Finish), "None"), exclude = NULL)) %>%
+  mutate(Garage.Finish = relevel(Garage.Finish, ref="None")) %>%
+  mutate(Garage.Qual =  factor(Garage.Qual, levels = levels(addNA(Garage.Qual)), labels = c(levels(Garage.Qual), "None"), exclude = NULL)) %>%
+  mutate(Garage.Qual = relevel(Garage.Qual, ref="None")) %>%
+  mutate(Garage.Cond =  factor(Garage.Cond, levels = levels(addNA(Garage.Cond)), labels = c(levels(Garage.Cond), "None"), exclude = NULL)) %>%
+  mutate(Garage.Cond = relevel(Garage.Cond, ref="None")) %>%
+  mutate(Porch.Area = Wood.Deck.SF+ Open.Porch.SF+Enclosed.Porch+X3Ssn.Porch + Screen.Porch) %>%
+  mutate(Pool.YN = 1*(Pool.Area>0)) %>%
+  mutate(Pool.QC =  factor(Pool.QC, levels = levels(addNA(Pool.QC)), labels = c(levels(Pool.QC), "None"), exclude = NULL)) %>%
+  mutate(Pool.QC = relevel(Pool.QC, ref="None")) %>%
+  mutate(Fence =  factor(Fence, levels = levels(addNA(Fence)), labels = c(levels(Fence), "None"), exclude = NULL)) %>%
+  mutate(Misc.Feature =  factor(Misc.Feature, levels = levels(addNA(Misc.Feature)), labels = c(levels(Misc.Feature), "None"), exclude = NULL)) %>%
+  mutate(Mo.Sold = as.factor(Mo.Sold)) %>%
+  mutate(Yr.Sold = as.factor(Yr.Sold)) %>%
+  dplyr::select(-Garage.Yr.Blt) %>%
+  mutate(Condition.1 = as.character(Condition.1)) %>%
+  mutate(Kitchen.Qual=plyr::mapvalues(Kitchen.Qual, from = c("Po", "Fa", "TA","Gd", "Ex" ), to = c("1", "2", "3", "4", "5"))) %>%
+  mutate(Kitchen.Qual = as.numeric(as.character(Kitchen.Qual))) %>%
+  mutate(Heating.QC=plyr::mapvalues(Heating.QC, from = c("Po", "Fa", "TA","Gd", "Ex" ), to = c("1", "2", "3", "4", "5"))) %>%
+  mutate(Heating.QC = as.numeric(as.character(Heating.QC))) %>%
+  mutate(Bsmt.Qual = droplevels(Bsmt.Qual)) %>%
+  mutate(Functional = droplevels(Functional)) %>%
+  mutate(Roof.Matl = droplevels(Roof.Matl))
+
+
+
+# Simplify Condition 1 (Park, Rail, Normal)
+ind_rail<-which(data$Condition.1=="RRNn" | data$Condition.1=="RRAn" | data$Condition.1=="RRNe" | data$Condition.1=="RRAe")
+ind_park<-which(data$Condition.1=="PosN" | data$Condition.1=="PosA")
+data$Condition.1[ind_rail]<-"Rail"
+data$Condition.1[ind_park]<-"Park"
+data = data %>% 
+  mutate(Condition.1 = factor(Condition.1)) %>%
+  mutate(Condition.1 = relevel(Condition.1, ref="Norm")) 
+
+# Eliminate the one entry in 'Exposure' that had been left completely empty
+data_train<-data
+data_train$Bsmt.Exposure[which(data_train$Bsmt.Exposure=="")]<-"None"
+data_train$Bsmt.Exposure<-droplevels(data_train$Bsmt.Exposure)
+
+data_train$Pool.Area<-data_train$Pool.Area+1
+data_train$Total.Bsmt.SF<-data_train$Total.Bsmt.SF+1
+
+library(ggplot2)
+library(treemap)
+
+#Data Vizes
+neighborhood.price.range = ggplot(data_train, aes(x = reorder(Neighborhood, desc(price), median), y = price, fill=price)) + geom_boxplot(colour="darkslateblue",fill=terrain.colors(28, alpha=1)) + theme_light() + theme(axis.text.x=element_text(angle=45,hjust=1,vjust=1)) + labs(x = "Neighborhood", y="Price [USD]", title="Boxplot of Price by Neighborhood") + theme(plot.title = element_text(hjust=0.5))
+
+plot(neighborhood.price.range)
+
+ptrain_data = data_train
+ptrain_data = ptrain_data%>%mutate(Overall.Qual.level1 = ifelse(Overall.Qual %in% c(1,2,3,4), "low", Overall.Qual))%>%
+ mutate(Overall.Qual.level2 = ifelse(Overall.Qual.level1 %in% c("5","6","7"),"med",Overall.Qual.level1))%>%
+ mutate(Overall.Qual.level3 = ifelse(Overall.Qual.level2 %in% c("8","9","10"),"high",Overall.Qual.level2))
+#sum(ptrain_data$Overall.Qual.level3 %in% c("low","med","high"))
+
+f = qplot(x = TotalSq, y = price, data = ptrain_data, color = factor(Overall.Qual.level3)) + theme_classic()
+f + labs(color='Overall Quality') + xlab("Total Square Feet") + ylab("Price")+ ggtitle("Sale Price versus Total Square Feet by Overall Quality")
+```
+
+Data Visualizations
+========================================================
+
+```{r, echo=FALSE}
+plot(cars)
+```

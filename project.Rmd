@@ -42,6 +42,22 @@ which(miss_prop>0.5) # four features have greater than 50% of data "missing" -- 
 ```
 
 
+
+```{r}
+
+neighborhoods = unique(data_train$Neighborhood)
+
+distance = c(1.0, 2.8, 2.8, 5.0, 2.8, 2.4, 3.0, 2.5, 4.5, 2.5, 3.0, 2.7, 1.0, 2.0, 2.7, 3.2, 2.9, 4.0, 3.2, 3.9, 1.0, 1.8, 1.3, 3.6, 2.3, 1.1, 3.4, 1.5)
+
+
+
+
+
+
+
+```
+
+
 Notes about data cleaning:
 
 We dropped “utilities” (type of utilities available) since in the training set, only 2 observations did not have all the utilities (electricity, gas, water and sewage). Intuitively, most modern property are equipped with these basic public utilities and keeping the variable would therefore be unnecessary. 
@@ -187,6 +203,7 @@ performance<- function(Y, Yhat){
 ```{r}
 library(MASS)
 
+<<<<<<< HEAD
 # Base model with transformed predictors 
  model=lm(price ~ MS.SubClass + MS.Zoning + log(Lot.Frontage) + log(Lot.Area) +  Street + Alley + Lot.Shape + Land.Contour + Lot.Config + Land.Slope + Neighborhood + Condition.1  + Bldg.Type + House.Style + Overall.Qual + Overall.Cond + HouseAge +   Roof.Style + Roof.Matl + Exterior.1st + Mas.Vnr.Type + log(1+Mas.Vnr.Area) + Exter.Cond + Exter.Qual +   Foundation + Bsmt.Qual + Bsmt.Cond + Bsmt.Exposure + Total.Bsmt.SF + Heating + Heating.QC + Central.Air + Electrical + log(X12.SF) + log(1+Low.Qual.Fin.SF) + Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + Fireplaces + Fireplace.Qu + Garage.Type + Garage.Finish + Garage.Cars + Garage.Cond + Garage.Qual + Paved.Drive + log(1+Pool.Area) + Pool.QC + Fence + Misc.Val + Mo.Sold  +Yr.Sold + Sale.Type  + TotalSq, data=data_train)
 
@@ -204,6 +221,9 @@ plot(model.0)
 
 
 model.BIC=lm(formula = log(price) ~ log(Lot.Area) + distance + Condition.1 + 
+=======
+model.BIC=lm(formula = log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 + 
+>>>>>>> e72516d6f758a1f3d1e331f8b37cae8d857af08d
                Overall.Qual + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
                Bsmt.Exposure + log(Total.Bsmt.SF) + Heating.QC + Central.Air + 
                Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + 
@@ -224,6 +244,17 @@ model.interact.reduced=lm(log(price) ~ log(Lot.Area) + Condition.1 + Overall.Qua
     data = data_train)
 summary(model.interact.reduced)
 plot(model.interact.reduced)
+
+
+results <- summary(model.interact.reduced) 
+
+id<-results$coefficients[,4]<1e-6
+
+sum(id)
+
+aa<-results$coefficients[id,]
+
+aa
 
 
 step(modelinteract, k=log(nrow(data_train)))
@@ -262,6 +293,7 @@ plot(hatvalues(model.BIC), type = "h")
 ```
 
 
+<<<<<<< HEAD
 ```{r}
 library(gbm)
 
@@ -278,6 +310,8 @@ summary(boost)
 ```
 
 
+=======
+>>>>>>> e72516d6f758a1f3d1e331f8b37cae8d857af08d
 ```{r}
 ## Prepare test data
 load("ames_test.Rdata")
@@ -364,6 +398,10 @@ Yhat = predict(model.BIC, newdata=data_test, interval="predict")
 # depending on the response transformation
 Yhat = exp(Yhat)
 
+
+performance(Y, Yhat)
+
+
 #For calculating Top 10 undervalued and overvalued homes
 overvalued = data_test %>% 
                        mutate(price_to_pred_ratio = Y/Yhat[,1]) %>% 
@@ -448,7 +486,28 @@ mean(abs(Y-Yhat[1]))
 sqrt(mean((Y-Yhat)^2))
 ```
 
+<<<<<<< HEAD
 
+=======
+### Part II: Complex Model
+
+In this part you may go all out for constructing a best fitting model for predicting housing prices using methods that we have covered this semester.  You should feel free to to create any new variables (such as quadratic, interaction, or indicator variables, splines, etc). The variable `TotalSq = X1st.Flr.SF+X2nd.Flr.SF` was added to the dataframe (that does not include basement area, so you may improve on this. A relative grade is assigned by comparing your fit on the test set to that of your fellow students with bonus points awarded to those who substantially exceed their fellow students and point reductions occurring for models which fit exceedingly poorly.  
+
+Update your predictions using your complex model to provide point estimates and CI.
+
+```{r}
+model.interact.reduced=lm(log(price) ~ log(Lot.Area) + Condition.1 + Overall.Qual + 
+    Baths + Neighborhood + Garage.Cars + log(Total.Bsmt.SF) + 
+    log(TotalSq) + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
+    Bsmt.Exposure + Heating.QC + Central.Air + Bedroom.AbvGr + 
+    Kitchen.AbvGr + Kitchen.Qual + Functional + Fireplaces + 
+    Paved.Drive + Overall.Qual:Garage.Cars + Overall.Qual:log(TotalSq) + 
+    Garage.Cars:log(TotalSq) + Overall.Qual:Garage.Cars:log(TotalSq), 
+    data = data_train)
+summary(model.interact.reduced)
+plot(model.interact.reduced)
+```
+>>>>>>> e72516d6f758a1f3d1e331f8b37cae8d857af08d
 
 ```{r}
 # Lasso for the simplified model (from BIC)
@@ -552,6 +611,16 @@ area.plot = treemap(tree.data, index=c("price.bin", "price"), vSize="TotalSq", t
 data_train$Overall.Qual = as.numeric(data_train$Overall.Qual)
 quality.plot = ggplot(data_train, aes(x = Overall.Qual, y=price)) + geom_smooth(color="gold") + geom_count(color="red3") + theme_bw() + labs(x="Overall Quality", y="Price", title="Price by Overall Quality") + theme(plot.title = element_text(hjust=0.5))
 suppressMessages(plot(quality.plot))
+```
+
+```{r}
+#For calculating Top 10 undervalued and overvalued homes
+over.under = data.frame(value.diff = Yhat/Y)
+undervalued=dplyr::top_n(over.under, 10, value.diff)
+overvalued=dplyr::top_n(over.under, 10, desc(value.diff))
+top.10 = data.frame(under = dplyr::arrange(undervalued, desc(value.diff)), over = dplyr::arrange(overvalued,value.diff))
+library(knitr)
+kable(top.10, col.names=c("Top 10 Undervalued Houses", "Top 10 Overvalued Houses"))
 ```
 
 
