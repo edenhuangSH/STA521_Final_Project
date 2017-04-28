@@ -118,6 +118,20 @@ The mantra in real estate appears to be "location, location, location." This beg
 library(ggplot2)
 library(treemap)
 
+theme_light = function (base_size = 11, base_family = "") 
+{
+    theme_grey(base_size = base_size, base_family = base_family) %+replace% 
+        theme(panel.background = element_rect(fill = "lavender", 
+            colour = NA), panel.border = element_rect(fill = NA, 
+            colour = "darkslateblue", size = 0.5), panel.grid.major = element_line(colour = "lavenderblush3", 
+            size = 0.25), panel.grid.minor = element_line(colour = "lavenderblush3", 
+            size = 0.125), axis.ticks = element_line(colour = "darkslateblue", 
+            size = 0.25), legend.key = element_rect(fill = "white", 
+            colour = NA), strip.background = element_rect(fill = "darkslateblue", 
+            colour = NA), strip.text = element_text(colour = "white", 
+            size = rel(0.8)), complete = TRUE)
+}
+
 #Data Vizes
 neighborhood.price.range = ggplot(data_train, aes(x = reorder(Neighborhood, desc(price), median), y = price, fill=price)) + geom_boxplot(colour="darkslateblue",fill=terrain.colors(28, alpha=1)) + theme_light() + theme(axis.text.x=element_text(angle=45,hjust=1,vjust=1)) + labs(x = "Neighborhood", y="Price [USD]", title="Boxplot of Price by Neighborhood") + theme(plot.title = element_text(hjust=0.5))
 
@@ -522,6 +536,18 @@ tree.data = data_train %>% mutate(price.bin = ifelse(price <= 50000, "<= $50,000
 tree.data = as.data.frame(tree.data)
 
 area.plot = treemap(tree.data, index=c("price.bin", "price"), vSize="TotalSq", type="index", palette="Oranges", algorithm="pivotSize", title="Effect of Total Square Footage on Price Range", fontsize.title = 14)
+
+theme_bw = function (base_size = 11, base_family = "") 
+{
+    theme_grey(base_size = base_size, base_family = base_family) %+replace% 
+        theme(panel.background = element_rect(fill = "aliceblue", 
+            colour = NA), panel.border = element_rect(fill = NA, 
+            colour = "Navy"), panel.grid.major = element_line(colour = "cornflowerblue"), 
+            panel.grid.minor = element_line(colour = "cornflowerblue", 
+                size = 0.25), strip.background = element_rect(fill = "cornflowerblue", 
+                colour = "Navy"), legend.key = element_rect(fill = "white", 
+                colour = NA), complete = TRUE)
+}
 
 data_train$Overall.Qual = as.numeric(data_train$Overall.Qual)
 quality.plot = ggplot(data_train, aes(x = Overall.Qual, y=price)) + geom_smooth(color="gold") + geom_count(color="red3") + theme_bw() + labs(x="Overall Quality", y="Price", title="Price by Overall Quality") + theme(plot.title = element_text(hjust=0.5))
