@@ -192,6 +192,17 @@ performance<- function(Y, Yhat){
 ```{r}
 library(MASS)
 
+library(gbm)
+
+boost = gbm(log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 + 
+               Overall.Qual + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
+               Bsmt.Exposure + log(Total.Bsmt.SF) + Heating.QC + Central.Air + 
+               Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + 
+               Fireplaces + Garage.Cars + Paved.Drive + log(Pool.Area) + 
+               log(TotalSq), data = data_train, distribution="gaussian", n.trees=5000, interaction.depth = 1, shrinkage=0.01, verbose = F)
+
+summary(boost)
+
 model.BIC=lm(formula = log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 + 
                Overall.Qual + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
                Bsmt.Exposure + log(Total.Bsmt.SF) + Heating.QC + Central.Air + 
@@ -348,7 +359,7 @@ library(treemap)
 tree.data = data_train %>% mutate(price.bin = ifelse(price <= 50000, "<= $50,000", ifelse(price > 50000 & price <= 100000, "$50,000-100,000", ifelse(price > 100000 & price <= 200000, "$100,000-200,000", ifelse(price > 200000 & price <= 300000, "$200,000-300,000", ifelse(price > 300000 & price <= 400000, "$300,000-400,000", ifelse(price > 400000 & price <= 500000, "$400,000-500,000", "> $500,000")))))))
 tree.data = as.data.frame(tree.data)
 
-area.plot = treemap(tree.data, index=c("price.bin", "price"), vSize="Lot.Area", type="index", palette="YlGn", algorithm="pivotSize", title="Effect of Lot Area on Price Range", fontsize.title = 14)
+area.plot = treemap(tree.data, index=c("price.bin", "price"), vSize="Lot.Area", type="index", palette="YlGn", algorithm="squarified", title="Effect of Lot Area on Price Range", fontsize.title = 14, fun.aggregate="mean")
 
 area.plot = treemap(tree.data, index=c("price.bin", "price"), vSize="TotalSq", type="index", palette="Oranges", algorithm="pivotSize", title="Effect of Total Square Footage on Price Range", fontsize.title = 14)
 
@@ -360,8 +371,8 @@ suppressMessages(plot(quality.plot))
 
 ```{r}
 #For calculating Top 10 undervalued and overvalued homes
-over.under = data.frame(value.diff = Yhat/Y)
-undervalued=dplyr::top_n(over.under, 10, over.undervalue.diff)
+over.under = data.frame(value.diff = Yhat[,1]/Y)
+undervalued=dplyr::top_n(over.under, 10, value.diff)
 overvalued=dplyr::top_n(over.under, 10, desc(value.diff))
 top.10 = data.frame(under = dplyr::arrange(undervalued, desc(value.diff)), over = dplyr::arrange(overvalued,value.diff))
 library(knitr)
@@ -474,9 +485,6 @@ Yhat = predict(model.BIC, newdata=data_validation, interval="predict")
 
 
 You may iterate here as much as you like exploring different models until you are satisfied with your results.
-
-
-
 
 ### Part III: Write Up
 
