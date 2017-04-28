@@ -14,15 +14,155 @@ knitr::opts_chunk$set(echo = TRUE)
 ## 1. Exploratory data analysis (20 points)
 Instruction: You must include three correctly labeled graphs and an explanation that highlight the most important features that went into your model building.
 
+We first read in the training data and performed basic checks to identify fields with (truly) missing data and potential abnormalities. The variable lot frontage was identified to have 282 or 18.8% missing entries. We removed this predictor, and verified a posteriori that adding it in would not lead to better model predictions.
 
-During the development of our project, we used random forests and boosting not only in our quest to find the best performing model, but also as a useful tool for exploratory data analysis. A particularly useful feature in this regard was the relative importance plot, which revealed that Neighborhood, Lot Area, and Overall Quality were the most important variables. In response to this, we chose to create plots highlighting the relationships between Price and these three important features.
+```{r read-data, echo=FALSE, message=FALSE, warning=FALSE}
+library(dplyr)
+library(tidyr)
 
-In our first graph, we use a boxplot to show the range of prices across neighborhoods. From this type of plot, we can see the price range, interquartile range, median, and outliers, arranged in descending order from the neighborhood with the highest median price range to the neighborhood with the lowest. An interesting observation is that there seems to be wider dispersion among the more affluent neighborhoods, whereas the neighborhoods with cheaper housing tend to be more concentrated around their medians. There are of course a few exceptions in the former, such as Green Hills and Greens, but in general those neighborhoods with higher housing prices tend to have larger variance. This conforms to a note given to us in the variable guide, which tells us that the assumption of homoskedasticity appears to be violated, as variation increases with sale price. This is an important observation, as it indicates that we would be wise to transform the response variable (which we have in the form of a log transformation).
+load("ames_train.Rdata")
+
+#print(paste0("The dataset has ", dim(ames_train)[1], " number of observations and ", dim(ames_train)[2], " features"))
+
+#Variables with NA's and their proportion of missing data
+miss = apply(is.na(ames_train), 2, sum)
+miss_prop = round(miss[miss>0]/nrow(ames_train), 3)
+#print(miss_prop) 
+#which(miss_prop>0.5) # four features have greater than 50% of data "missing" -- drop these variables
+```
+
+
+```{r, echo=FALSE}
+# Did not remove any NA entries in Lot.frontage
+
+data=ames_train
+
+data <- data  %>%
+  #filter(!is.na(Lot.Frontage)) %>% 
+  mutate(MS.SubClass= factor(MS.SubClass)) %>%
+  mutate(Alley =  factor(Alley, levels = levels(addNA(Alley)), labels = c(levels(Alley), "None"), exclude = NULL)) %>%
+  mutate(HouseAge = Yr.Sold- pmax(Year.Built, Year.Remod.Add))  %>%
+  filter(!is.na(Mas.Vnr.Area))  %>% 
+  mutate(Bsmt.YN = 1*(!is.na(Bsmt.Qual))) %>%
+  mutate(Bsmt.Qual =  factor(Bsmt.Qual, levels = levels(addNA(Bsmt.Qual)), labels = c(levels(Bsmt.Qual), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Qual = relevel(Bsmt.Qual, ref="None")) %>%
+  mutate(Bsmt.Cond =  factor(Bsmt.Cond, levels = levels(addNA(Bsmt.Cond)), labels = c(levels(Bsmt.Cond), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Cond = relevel(Bsmt.Cond, ref="None")) %>%
+  mutate(Bsmt.Exposure =  factor(Bsmt.Exposure, levels = levels(addNA(Bsmt.Exposure)), labels = c(levels(Bsmt.Exposure), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Exposure = relevel(Bsmt.Exposure, ref="None")) %>%
+  mutate(BsmtFin.Type.1=  factor(BsmtFin.Type.1, levels = levels(addNA(BsmtFin.Type.1)), labels = c(levels(BsmtFin.Type.1), "None"), exclude = NULL)) %>%
+  mutate(BsmtFin.Type.1 = relevel(BsmtFin.Type.1, ref="None")) %>%
+  mutate(BsmtFin.Type.2=  factor(BsmtFin.Type.2, levels = levels(addNA(BsmtFin.Type.2)), labels = c(levels(BsmtFin.Type.2), "None"), exclude = NULL)) %>%
+  mutate(BsmtFin.Type.2 = relevel(BsmtFin.Type.2, ref="None")) %>%
+  mutate(X12.SF= X1st.Flr.SF+ X2nd.Flr.SF)  %>%   
+  filter(!is.na(Bsmt.Full.Bath)) %>%
+  filter(!is.na(Bsmt.Half.Bath)) %>%
+  mutate(Baths = Bsmt.Full.Bath + 0.5*Bsmt.Half.Bath + Full.Bath + 0.5*Half.Bath) %>%
+  mutate(Fireplace.YN = 1*(Fireplaces>0)) %>%
+  mutate(Fireplace.Qu =  factor(Fireplace.Qu, levels = levels(addNA(Fireplace.Qu)), labels = c(levels(Fireplace.Qu), "None"), exclude = NULL)) %>%
+  mutate(Fireplace.Qu = relevel(Fireplace.Qu, ref="None")) %>%
+  mutate(Garage.YN = 1*(!is.na(Garage.Cond))) %>%
+  mutate(Garage.Type =  factor(Garage.Type, levels = levels(addNA(Garage.Type)), labels = c(levels(Garage.Type), "None"), exclude = NULL)) %>%
+  mutate(Garage.Type = relevel(Garage.Type, ref="None")) %>%
+  mutate(Garage.Finish =  factor(Garage.Finish, levels = levels(addNA(Garage.Finish)), labels = c(levels(Garage.Finish), "None"), exclude = NULL)) %>%
+  mutate(Garage.Finish = relevel(Garage.Finish, ref="None")) %>%
+  mutate(Garage.Qual =  factor(Garage.Qual, levels = levels(addNA(Garage.Qual)), labels = c(levels(Garage.Qual), "None"), exclude = NULL)) %>%
+  mutate(Garage.Qual = relevel(Garage.Qual, ref="None")) %>%
+  mutate(Garage.Cond =  factor(Garage.Cond, levels = levels(addNA(Garage.Cond)), labels = c(levels(Garage.Cond), "None"), exclude = NULL)) %>%
+  mutate(Garage.Cond = relevel(Garage.Cond, ref="None")) %>%
+  mutate(Porch.Area = Wood.Deck.SF+ Open.Porch.SF+Enclosed.Porch+X3Ssn.Porch + Screen.Porch) %>%
+  mutate(Pool.YN = 1*(Pool.Area>0)) %>%
+  mutate(Pool.QC =  factor(Pool.QC, levels = levels(addNA(Pool.QC)), labels = c(levels(Pool.QC), "None"), exclude = NULL)) %>%
+  mutate(Pool.QC = relevel(Pool.QC, ref="None")) %>%
+  mutate(Fence =  factor(Fence, levels = levels(addNA(Fence)), labels = c(levels(Fence), "None"), exclude = NULL)) %>%
+  mutate(Misc.Feature =  factor(Misc.Feature, levels = levels(addNA(Misc.Feature)), labels = c(levels(Misc.Feature), "None"), exclude = NULL)) %>%
+  mutate(Mo.Sold = as.factor(Mo.Sold)) %>%
+  mutate(Yr.Sold = as.factor(Yr.Sold)) %>%
+  dplyr::select(-Garage.Yr.Blt) %>%
+  mutate(Condition.1 = as.character(Condition.1)) %>%
+  mutate(Kitchen.Qual=plyr::mapvalues(Kitchen.Qual, from = c("Po", "Fa", "TA","Gd", "Ex" ), to = c("1", "2", "3", "4", "5"))) %>%
+  mutate(Kitchen.Qual = as.numeric(as.character(Kitchen.Qual))) %>%
+  mutate(Heating.QC=plyr::mapvalues(Heating.QC, from = c("Po", "Fa", "TA","Gd", "Ex" ), to = c("1", "2", "3", "4", "5"))) %>%
+  mutate(Heating.QC = as.numeric(as.character(Heating.QC))) %>%
+  mutate(Bsmt.Qual = droplevels(Bsmt.Qual)) %>%
+  mutate(Functional = droplevels(Functional)) %>%
+  mutate(Roof.Matl = droplevels(Roof.Matl))
+
+
+
+# Simplify Condition 1 (Park, Rail, Normal)
+ind_rail<-which(data$Condition.1=="RRNn" | data$Condition.1=="RRAn" | data$Condition.1=="RRNe" | data$Condition.1=="RRAe")
+ind_park<-which(data$Condition.1=="PosN" | data$Condition.1=="PosA")
+data$Condition.1[ind_rail]<-"Rail"
+data$Condition.1[ind_park]<-"Park"
+data = data %>% 
+  mutate(Condition.1 = factor(Condition.1)) %>%
+  mutate(Condition.1 = relevel(Condition.1, ref="Norm")) 
+
+# Eliminate the one entry in 'Exposure' that had been left completely empty
+data_train<-data
+data_train$Bsmt.Exposure[which(data_train$Bsmt.Exposure=="")]<-"None"
+data_train$Bsmt.Exposure<-droplevels(data_train$Bsmt.Exposure)
+
+data_train$Pool.Area<-data_train$Pool.Area+1
+data_train$Total.Bsmt.SF<-data_train$Total.Bsmt.SF+1
+```
+
+The mantra in real estate appears to be "location, location, location." This begs for a simple visualization of house price distribution by neighborhood.
+
+```{r neighborhood_range, echo=FALSE}
+library(ggplot2)
+library(treemap)
+
+#Data Vizes
+neighborhood.price.range = ggplot(data_train, aes(x = reorder(Neighborhood, desc(price), median), y = price, fill=price)) + geom_boxplot(colour="darkslateblue",fill=terrain.colors(28, alpha=1)) + theme_light() + theme(axis.text.x=element_text(angle=45,hjust=1,vjust=1)) + labs(x = "Neighborhood", y="Price [USD]", title="Boxplot of Price by Neighborhood") + theme(plot.title = element_text(hjust=0.5))
+
+plot(neighborhood.price.range)
+```
+
+An interesting observation is that there is a wider dispersion among the more affluent neighborhoods basede on relative inter-quartile ranges, whereas the neighborhoods with cheaper housing tend to be more concentrated around their medians. There are of course a few exceptions in the former, such as Green Hills and Greens, but in general those neighborhoods with higher housing prices tend to have larger variance. This conforms to a note given to us in the variable guide, which tells us that the assumption of homoskedasticity appears to be violated, as variation increases with sale price. This is an important observation, as it indicates that we would be wise to transform the response variable (which we have in the form of a log transformation).
+
+
 To show the relationship between price and lot area, we chose a treemap. In this plot, we have binned housing prices into arbitrary ranges. Each range has its own color (which we note are unfortunately not ordered by scale) and is labeled accordingly, while the sizes of the squares indicate the mean Lot Area for that binned category. The unlabeled rectangles in the bottom right corner are the “Less than $50,000” range (the smallest square) and the “$500,000+” range (the long, narrow rectangle). It is interesting to see that while lot area increases in price initially, it reaches its peak at the $100,000-200,000 range and starts to decrease in price after that. While we accounted for the non-linearity in this explanatory variable in our finalized models by using a log transformation, the fit on this particular variable could possibly improved with a spline, though we were not able to produce such a model that was superior to our linear models.
-Our third plot shows the relationship between a house’s price and its overall quality, rated on a scale from 1 (Very Poor) to 10 (Very Excellent). The red clusters represent the counts of the number of observations that have a certain price and quality, with fatter clusters representing more observations having that price and quality. The gold smooth is a spline fitted with GAM (not by us, but by the geom_smooth function) that runs through the medians of the quality ratings, accompanied by a confidence band in transparent gray. It is interesting to note that most observations fall into the $100,000-300,000 range, as well as the 5 to 8 quality range, which we can observe due to the fatter clusters in these areas. We can also see that the confidence bands through this region are understandably at their most narrow, whereas the bands widen at the Very Poor end of the range, due to there being very few observations at that end. Finally, it is easy to see that there is a non-linear trend in price that occurs around the 7.5 mark, where the slope of the curve steepens. While it is possible that the best fit could be achieved by a spline, logging the price variable seemed to do the trick in correcting for this non-linearity. We did not log Overall Quality, due to its being an integer.
+
+
+```{r}
+
+
+
+tree.data = data_train %>% mutate(price.bin = ifelse(price <= 50000, "<= $50,000", ifelse(price > 50000 & price <= 100000, "$50,000-100,000", ifelse(price > 100000 & price <= 200000, "$100,000-200,000", ifelse(price > 200000 & price <= 300000, "$200,000-300,000", ifelse(price > 300000 & price <= 400000, "$300,000-400,000", ifelse(price > 400000 & price <= 500000, "$400,000-500,000", "> $500,000")))))))
+tree.data = as.data.frame(tree.data)
+
+area.plot = treemap(tree.data, index=c("price.bin", "price"), vSize="Lot.Area", type="index", palette="YlGn", algorithm="pivotSize", title="Effect of Lot Area on Price Range", fontsize.title = 14)
+
+area.plot = treemap(tree.data, index=c("price.bin", "price"), vSize="TotalSq", type="index", palette="Oranges", algorithm="pivotSize", title="Effect of Total Square Footage on Price Range", fontsize.title = 14)
+
+
+
+```
+
+
+
+Our third plot shows the relationship between a house’s price and its overall quality, rated on a scale from 1 (Very Poor) to 10 (Very Excellent).
+
+
+```{r clusters}
+
+data_train$Overall.Qual = as.numeric(data_train$Overall.Qual)
+quality.plot = ggplot(data_train, aes(x = Overall.Qual, y=price)) + geom_smooth(color="gold") + geom_count(color="red3") + theme_bw() + labs(x="Overall Quality", y="Price", title="Price by Overall Quality") + theme(plot.title = element_text(hjust=0.5))
+suppressMessages(plot(quality.plot))
+
+```
+
+
+The red clusters represent the counts of the number of observations that have a certain price and quality, with fatter clusters representing more observations having that price and quality. The gold smooth is a spline fitted with GAM (not by us, but by the geom_smooth function) that runs through the medians of the quality ratings, accompanied by a confidence band in transparent gray. It is interesting to note that most observations fall into the $100,000-300,000 range, as well as the 5 to 8 quality range, which we can observe due to the fatter clusters in these areas. We can also see that the confidence bands through this region are understandably at their most narrow, whereas the bands widen at the Very Poor end of the range, due to there being very few observations at that end. Finally, it is easy to see that there is a non-linear trend in price that occurs around the 7.5 mark, where the slope of the curve steepens. While it is possible that the best fit could be achieved by a spline, logging the price variable seemed to do the trick in correcting for this non-linearity. We did not log Overall Quality, due to its being an integer.
 
 
 2. Development and assessment of an initial model from Part I (10 points)
+
+
+During the development of our project, we used random forests and boosting not only in our quest to find the best performing model, but also as a useful tool for exploratory data analysis. A particularly useful feature in this regard was the relative importance plot, which revealed that Neighborhood, Lot Area, and Overall Quality were the most important variables. In response to this, we chose to create plots highlighting the relationships between Price and these three important features.
+
 
 * Initial model: must include a summary table and an explanation/discussion for variable selection.  Interpretation of coefficients desirable for full points.
 
