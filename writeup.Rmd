@@ -5,7 +5,7 @@ output:
   html_document: default
 ---
 
-```{r setup, include=FALSE}
+```{r, echo=FALSE,  setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -13,9 +13,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## 1. Exploratory data analysis (20 points)
 
-We first performed basic checks to identify fields with (truly) missing data and potential abnormalities. The variable lot frontage was identified to have 282 or 18.8% missing entries. We removed this predictor, and verified at a latern stage that adding it in would not lead to better model predictions.
+We first performed basic checks on the training data to identify predictors with (truly) missing entries and potential abnormalities. The variable lot frontage was identified to have 282 or 18.8% missing entries. We removed this predictor, and verified at a later stage that adding it in would not lead to better model predictions.
 
-```{r read-data, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE,  read-data, echo=FALSE, message=FALSE, warning=FALSE}
 library(dplyr)
 library(tidyr)
 
@@ -31,10 +31,15 @@ miss_prop = round(miss[miss>0]/nrow(ames_train), 3)
 ```
 
 
-```{r, echo=FALSE}
+```{r, echo=FALSE,echo=FALSE}
 # Did not remove any NA entries in Lot.frontage
 
+univ = c("SWISU", "Landmrk", "CollgCr", "BrkSide", "Greens", "Blueste") # 1.5
+ames_train = ames_train %>% mutate(distance = ifelse(Neighborhood %in% univ, 1, 0))
+#ames_test = ames_test %>% mutate(distance = ifelse(Neighborhood %in% univ, 1, 0))
+
 data=ames_train
+
 
 data <- data  %>%
   #filter(!is.na(Lot.Frontage)) %>% 
@@ -109,9 +114,23 @@ data_train$Total.Bsmt.SF<-data_train$Total.Bsmt.SF+1
 
 The mantra in real estate appears to be "location, location, location." This begs for a simple visualization of house price distribution by neighborhood.
 
-```{r neighborhood_range, echo=FALSE}
+```{r, echo=FALSE,  neighborhood_range}
 library(ggplot2)
 library(treemap)
+
+theme_light = function (base_size = 11, base_family = "") 
+{
+    theme_grey(base_size = base_size, base_family = base_family) %+replace% 
+        theme(panel.background = element_rect(fill = "lavender", 
+            colour = NA), panel.border = element_rect(fill = NA, 
+            colour = "darkslateblue", size = 0.5), panel.grid.major = element_line(colour = "lavenderblush3", 
+            size = 0.25), panel.grid.minor = element_line(colour = "lavenderblush3", 
+            size = 0.125), axis.ticks = element_line(colour = "darkslateblue", 
+            size = 0.25), legend.key = element_rect(fill = "white", 
+            colour = NA), strip.background = element_rect(fill = "darkslateblue", 
+            colour = NA), strip.text = element_text(colour = "white", 
+            size = rel(0.8)), complete = TRUE)
+}
 
 #Data Vizes
 neighborhood.price.range = ggplot(data_train, aes(x = reorder(Neighborhood, desc(price), median), y = price, fill=price)) + geom_boxplot(colour="darkslateblue",fill=terrain.colors(28, alpha=1)) + theme_light() + theme(axis.text.x=element_text(angle=45,hjust=1,vjust=1)) + labs(x = "Neighborhood", y="Price [USD]", title="Boxplot of Price by Neighborhood") + theme(plot.title = element_text(hjust=0.5))
@@ -119,17 +138,23 @@ neighborhood.price.range = ggplot(data_train, aes(x = reorder(Neighborhood, desc
 plot(neighborhood.price.range)
 ```
 
-An interesting observation is that there is a wider dispersion among the more affluent neighborhoods based on relative inter-quartile ranges, whereas the neighborhoods with cheaper housing tend to be more concentrated around their medians. This conforms to a note given to us in the variable guide, which tells us that the assumption of homoskedasticity appears to be violated, as variation increases with sale price. This is an important observation, as it indicates that we would be wise to transform the response variable (which we have, in the form of a log transformation).
+An interesting observation is that there is a wider dispersion among the more affluent neighborhoods based on relative inter-quartile ranges, whereas the neighborhoods with cheaper housing tend to be more concentrated around their medians. In other words, homoscedasticity is violated in this data set as variation increases with sale price. This is an important observation, as it indicates that we would be wise to transform the response variable (which we eventually did).
 
-With respect to location, we note that Ames is a college town built around Iowa State. With almost 16,000 employees, the unviersity is by far the biggest employer in town. Based on the available neighborhood map, we traced out the distance from the university to the different neighborhoods. This is visualized in the following graph. 
-
-
-We see that TBD
-
-Our third plot shows the relationship between a sales price and total square footage, stratified by overall quality of the house. We see that there are different slopes in the relationship between sales price and total square footage, indicating the need for interaction terms between these variables (indeed, the more complex model contains such interactions).
+With respect to location, we note that Ames is a college town built around Iowa State. With almost 16,000 employees, the university is by far the biggest employer in town. Using Google maps, we recorded the respective distances between the university to the different neighborhoods. Beyond a univariable analysis, we could not find an association between price and distance to university. This is illustrated in the following boxplot where we compare prices between close and distant universities with respect to the university. It was worth a try though, wasn't it.
 
 
-```{r clusters, echo=FALSE}
+```{r, echo=FALSE}
+
+boxplot(price ~ distance, data=ames_train, names=c("close", "distant"), xlab="Location with respect to university", ylab="Price [USD]")
+
+```
+
+
+
+Our third plot shows the relationship between sales price and total square footage, stratified by overall quality of the house. We see that there are different slopes in the relationship between sales price and total square footage, indicating the need for interaction terms between these variables (indeed, the more complex model contains such interactions).
+
+
+```{r, echo=FALSE,  clusters}
 library(ggplot2)
 ptrain_data = data_train
 ptrain_data = ptrain_data%>%mutate(Overall.Qual.level1 = ifelse(Overall.Qual %in% c(1,2,3,4), "low", Overall.Qual))%>%
@@ -142,30 +167,21 @@ f + labs(color='Overall Quality') + xlab("Total Square Feet") + ylab("Price")+ g
 ```
 
 
-The red clusters represent the counts of the number of observations that have a certain price and quality, with fatter clusters representing more observations having that price and quality. The gold smooth is a spline fitted with GAM (not by us, but by the geom_smooth function) that runs through the medians of the quality ratings, accompanied by a confidence band in transparent gray. It is interesting to note that most observations fall into the $100,000-300,000 range, as well as the 5 to 8 quality range, which we can observe due to the fatter clusters in these areas. We can also see that the confidence bands through this region are understandably at their most narrow, whereas the bands widen at the Very Poor end of the range, due to there being very few observations at that end. Finally, it is easy to see that there is a non-linear trend in price that occurs around the 7.5 mark, where the slope of the curve steepens. While it is possible that the best fit could be achieved by a spline, logging the price variable seemed to do the trick in correcting for this non-linearity. We did not log Overall Quality, due to its being an integer.
+Note that the dot size represents the number of observations at a given price and quality. The gold smooth is a spline fitted with GAM (geom_smooth function) that runs through the medians of the quality ratings, accompanied by a confidence band in transparent gray. It is interesting to note that most observations fall into the $100,000-300,000 range, as well as the 5 to 8 quality range, which is illustrated by the fatter clusters in these areas. We can also see that the confidence bands through this region are understandably at their most narrow, whereas the bands widen at the Very Poor end of the quality range, due to there being very few observations. Finally, it is easy to see that there is a non-linear trend in price that occurs around the 7.5 mark, where the slope of the curve steepens. While it is possible that the best fit could be achieved by a spline, logging the price variable seemed to do the trick in correcting for this non-linearity. We did not log Overall Quality, due to it being an integer.
 
 
 ## 2. Development and assessment of an initial model from Part I (10 points)
 
-Initial Model and Model Selection
+### Initial Model and Model Selection
+Prior to selecting the variables for our simple model, we cleaned the data (big time). We used a variety of techniques to do this, including converting variables to factors to account for non-linearities (e.g. MS.Subclass, Alley, Bsmt.Qual, Bsmt.Cond, etc.), aggregating like variables, such as combining porch square footage for different types of porches and creating a variable for total number of baths, accounting for the NA’s by adding levels named “None” where appropriate, creating a variable for house age- calculated by subtracting the max of year built and year remodeled from the year sold- and filtering out NA’s for a few particular variables with few NA’s.
 
-  Prior to selecting the variables for our simple model, we engaged in very scrupulous data cleaning. We used a variety of techniques to do this, including converting variables to factors to account for non-linearity (e.g. MS.Subclass, Alley, Bsmt.Qual, Bsmt.Cond, etc.), aggregating like variables, such as combining porch square footage for different types of porches and creating a variable for total number of baths, accounting for the NA’s by adding levels named “None” where appropriate, creating a variable for house age- calculated by subtracting the max of year built and year remodeled from the year sold- and filtering out NA’s for a few particular variables with few NA’s.
-  Following our data cleaning, we engaged in several exploratory exercises. We first fit a full model, including all of our variables, and examined its residual plots for indication as to the changes we should make. We detected some non-linearity in the data, seeing a trend in the residual and standardized residual plots, and decided to make a log transformation of our response variable, which improved the model fit. Taking a note from Appendix A in Gelman's book, we also automatically logged all continuous explanatory variables, as this helps provide a multiplicative effect to the model.
-  Having improved our model fit, we then went about variable selection. We found that running a step function evaluated using the Bayesian Information Criterion brought us down close to 20 predictors, giving us 22. We then used a boosted tree model to inform us of the relative importance of the variables and removed log(Pool.Area), Bedrooms.AbvGr, and Heating.QC, as these variables had the lowest relative importance. This brought is to our finalized simple model, with 19 predictors.
-  
-Residual Plots
+Following our data cleaning, we performed exploratory analyses. We first fit a full linear model, including all available variables, and examined its residual plots for indication as to the changes we should make. We detected some non-linearity in the data, seeing a trend in the residual and standardized residual plots, and decided to make a log transformation of our response variable, which improved the model fit. Taking a note from Appendix A in Gelman's book, we also  logged all continuous explanatory variables, as this helps provide a multiplicative effect to the model. Boxplot indicated that a log-transformation for the response is reasonable.
 
-  The residual plots for our simple model display favorable results. The residual vs. fitted plot shows little to no pattern, and while the scale-location plot has a slight pattern, it is not severe. While there are a few outliers displayed on the Normal Q-Q plot, most observations fall within 4 standard deviations, with the majority falling very close to or on the one-to-one line. Finally, after having the function removed observations with leverage 1, we observe a favorable leverage plot, with no observations exceeding .5.
-  
-RMSE
+Having improved our model fit through simple variable transformations, we then went about variable selection. We found that running a step function evaluated using the Bayesian Information Criterion brought us down close to 20 predictors, giving us 22. We then used a boosted tree model (depth 1, no interactions) to evaluate the relative importance of these 22 variables, and removed log(Pool.Area), Bedrooms.AbvGr, and Heating.QC, as these variables had the lowest relative importance. This brought is to our finalized simple model, with 19 predictors.
 
-Our RMSE for the simple model evaluated on the test set comes to 15,477.42, which is only ~8% of the mean house price. This implies that the RMSE is fairly small.
 
-Model Testing
 
-Beyond the RMSE, we were very pleased to see a bias relatively closer to zero than our fellow teams, at -165.05. We observed a maximum deviation of 66,474.27, a mean deviation of 11,458.19, and coverage of 96.2%. The coverage is very favorable and, given that the mean deviation is less than 10% of the mean housing price for the training set, we are please with these results.
-
-```{r}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 library(gbm)
 
 boost = gbm(log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 + 
@@ -175,6 +191,42 @@ boost = gbm(log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 +
                Fireplaces + Garage.Cars + Paved.Drive + log(Pool.Area) + 
                log(TotalSq), data = data_train, distribution="gaussian", n.trees=5000, interaction.depth = 1, shrinkage=0.01, verbose = F)
 
+summary.gbm = function (object, cBars = length(object$var.names), n.trees = object$n.trees, 
+    plotit = TRUE, order = TRUE, method = relative.influence, 
+    normalize = TRUE, ...) 
+{
+    if (n.trees < 1) {
+        stop("n.trees must be greater than 0.")
+    }
+    if (n.trees > object$n.trees) {
+        warning("Exceeded total number of GBM terms. Results use n.trees=", 
+            object$n.trees, " terms.\n")
+        n.trees <- object$n.trees
+    }
+    rel.inf <- method(object, n.trees)
+    rel.inf[rel.inf < 0] <- 0
+    if (order) {
+        i <- order(-rel.inf)
+    }
+    else {
+        i <- 1:length(rel.inf)
+    }
+    if (cBars == 0) 
+        cBars <- min(10, length(object$var.names))
+    if (cBars > length(object$var.names)) 
+        cBars <- length(object$var.names)
+    if (normalize) 
+        rel.inf <- 100 * rel.inf/sum(rel.inf)
+    if (plotit) {
+        barplot(rel.inf[i[cBars:1]], horiz = FALSE, col = rainbow(cBars, 
+            start = 4/6, end = 0), names = object$var.names[i[cBars:1]], 
+            main = "Relative influence", ..., cex.names = 0.55, las=2
+            )
+    }
+    return(data.frame(var = object$var.names[i], rel.inf = rel.inf[i]))
+}
+
+
 summary(boost)
 
 model.BIC=lm(formula = log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 + 
@@ -183,12 +235,58 @@ model.BIC=lm(formula = log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 +
                Baths + Kitchen.AbvGr + Kitchen.Qual + Functional + 
                Fireplaces + Garage.Cars + Paved.Drive +
                log(TotalSq), data = data_train)
-summary(model.BIC)
+```
+
+
+  
+### Residual Plots
+The residual plots for our simple model display favorable results. The residual vs. fitted plot shows little to no pattern, and while the scale-location plot has a slight pattern, it is not severe. While there are a few outliers displayed on the Normal Q-Q plot, most observations fall within 4 standard deviations, with the majority falling very close to or on the one-to-one line. Finally, after having the function removed observations with leverage 1, we observe a favorable leverage plot, with no observations exceeding a Cook's distance of 0.5.
+
+
+
+```{rm, echo=FALSE}
+#summary(model.BIC)
+par(mfrow=c(2,2))
 plot(model.BIC)
 ```
 
-```{r}
+  
+### RMSE
+The RMSE for the simple model evaluated on the test was  15,477, which corresponds to approximately 8% of the mean house price. This implies that the RMSE is fairly small.
+
+### Model Testing
+Beyond the RMSE, we were very pleased to see a bias relatively closer to zero than our fellow teams, at -165.05. We found a maximum deviation of 66,474.27, a mean deviation of 11,458.19, and coverage of 96.2%. The coverage is very favorable and, given that the mean deviation is less than 10% of the mean housing price for the training set, we are please with these results.
+
+
+```{r, echo=FALSE }
+### perfromance evlaution function
+
+
+performance<- function(Y, Yhat){
+  
+  bias<- mean(Y-Yhat[,1])
+  
+  max.dev<-max(abs(Y-Yhat[,1]))
+  
+  mean.dev<-mean(abs(Y-Yhat[,1]))
+  
+  RMSE<-sqrt(mean((Y-Yhat[,1])^2))
+  
+  
+  coverage<-mean((Y>Yhat[,2]) & (Y<Yhat[,3]))
+  
+  out<-data.frame(bias=bias, max.dev=max.dev, mean.dev=mean.dev, RMSE=RMSE, Coverage=coverage)
+  
+  return(out)
+}
+
+```
+
+
+
+```{r, echo=FALSE }
 ## Prepare test data
+library(knitr)
 load("ames_test.Rdata")
 
 data=ames_test
@@ -285,32 +383,56 @@ Yhat = exp(Yhat)
 
 # name dataframe as predictions! DO NOT CHANGE
 predictions = as.data.frame(Yhat)
+
 predictions$PID = data_test$PID
 
 save(predictions, file="predict.Rdata")
 
-performance(Y, Yhat)
+A<-performance(Y, Yhat)
 
-mean(Y-Yhat)
+# REpeat for training data
+Y = data_train$price
+
+Yhat = predict(model.BIC, newdata=data_train, interval="predict")
+
+# depending on the response transformation
+Yhat = exp(Yhat)
+
+B<-performance(Y, Yhat)
+
+C<-rbind(B,A)
+rownames(C)<-c("Training", "Test")
+
+kable(C)
+
+#mean(Y-Yhat)
   
-max(abs(Y-Yhat))
+#max(abs(Y-Yhat))
   
-mean(abs(Y-Yhat[1]))
+#mean(abs(Y-Yhat[1]))
   
-sqrt(mean((Y-Yhat)^2))
+#sqrt(mean((Y-Yhat)^2))
 ```
 
 
 
 ## 3. Development of the final model (20 points)
 
-We tried a range of different approaches for a more complex model. Among others, we evaluated tree models, bagging, boosting and random forests, as well as Lasso and Ridge. Based on RMSE however, none of these options was able to outperform a linear model with interaction terms.
+We tried a range of different approaches for a more complex model. Among others, we evaluated tree models, bagging, boosting and random forests, as well as Lasso and Ridge. Based on RMSE however, none of these options was able to outperform a linear model with interaction terms. To develop the final linear model, we proceeded as follows: 
+
+* We grew a deep true
+* We pruned the tree using cross-validation
+* We read out the interactions from the final tree
+* We inserted these interactions into the linear model
+* We ran a stepwise BIC
+
+The reason for not using a tree-based model for the final version was that the RMSE of these approaches remained substantially higher compared to the final OLS model.
 
 In consequence, the final model contains 22 different variables, two 2-way interactions and one 3-way interaction. 
 
-The 18 most imortant predictors are summarized in the following table. As one would expect (and mirroring the conclusions from the simple model), we  
+The 18 most important predictors are summarized in the following table.
 
-```{r}
+```{r, echo=FALSE}
 library(knitr)
 
 model.interact.reduced=lm(log(price) ~ log(Lot.Area) + Condition.1 + Overall.Qual + 
@@ -329,7 +451,7 @@ results <- summary(model.interact.reduced)
 
 id<-which(results$coefficients[,4]<1e-7)
 
-length(id)
+#length(id)
 
 aa<-results$coefficients[id,4]
 a<-sort.int(aa, index.return=TRUE)
@@ -339,15 +461,41 @@ kable(results$coefficients[id[a$ix],])
 ```
 
 
-* Final model: must include a summary table
+As one would expect, and similarly to the conclusions from the simple model, we find that the overall condition of the house, lot area, and square footage are critical predictors of the house price. Interestingly, the square footage of the basement is an independent predictor, as is the number of bathrooms. 
 
-* Variables: must include an explanation
+```{r, echo=FALSE }
+### perfromance evlaution function
+performance<- function(Y, Yhat){
+  
+  bias<- mean(Y-Yhat[,1])
+  
+  max.dev<-max(abs(Y-Yhat[,1]))
+  
+  mean.dev<-mean(abs(Y-Yhat[,1]))
+  
+  RMSE<-sqrt(mean((Y-Yhat[,1])^2))
+  
+  
+  coverage<-mean((Y>Yhat[,2]) & (Y<Yhat[,3]))
+  
+  out<-data.frame(bias=bias, max.dev=max.dev, mean.dev=mean.dev, RMES=RMSE, Coverage=coverage)
+  
+  return(out)
+}
 
-* Variable selecidtion/shrinkage: must use appropriate method and include an explanation
+```
 
 
+Finally, here are the model analytics for the complete model. 
 
-4. Assessment of the final model (25 points)
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+par(mfrow=c(2,2))
+plot(model.interact.reduced)
+
+```
+
+
+## 4. Assessment of the final model (25 points)
 
 * Residual: must include a residual plot and a discussion
 
@@ -360,21 +508,85 @@ kable(results$coefficients[id[a$ix],])
 * Model result: must include a selection of the top 10 undervalued and overvalued houses
 
 
+```{r}
+par(mfrow=c(2,2))
+plot(model.interact.reduced)
+summary(model.interact.reduced)
+```
 
-5. Conclusion (10 points): must include a summary of results and a discussion of things learned
+- Residual:
 
-  In reflecting upon the work we have done and our results, we have learned several things about the pricing of houses, as well as the data analysis process.
-  One of the key aspects that was apparent to us was how important our data-cleaning was to creating a successful model. In the early stages we had fit a model using the data more or less in its original form, with few modifications. After our meticulous data-cleaning session, the improvements were dramatic, as our bias dropped drastically and RMSE considerably.
-  Another observation we take away from our project is the realization that OLS is often very useful, and that more advanced methods are not always optimal. Over the course of the project we attempted running Ridge, Lasso, Blasso, Trees, Random Forests, and Boosting, with linear regression of the same variables ultimately outperforming them all.
-  Another thing we took away was the usefulness of tree models, not only in prediction, but also during model selection. We found boosting to be particularly useful in finalizing the variables we wanted to keep in our model through the examining the relative importance plot, and found a decision tree to be useful in indicating to us important interactions to consider in constructing our complex model.
-  Finally, we also learned some things along the way about the most important predictors of housing prices. From our model, and boosting in particular, we found that a house's overall quality, its neighborhood, and its total square footage were the most important predictors in our model. While this makes intuitive sense, seeing the relative importance from actual data helped clarify the most important inputs to housing price.
-  
+     Pardoe's paper "Modeling home prices using realtor data" suggests an issue of hetereoscedasticity with variation increasing with sale price. It is not an issue in our model. The residual plot shows that the variance is relatively constant and no obvious patterns exist, which suggests that constant variance assumption of residuals is well satisfied. However, there are some outliers in the bottom-left of the plot where properties are overvalued. In addition, the variance in the left part of the plot has a slightly higher varaince in predicted prices. We do not throw away outliers in the model.
 
-Appendix:
 
-One of our team members wanted to include the other visualizations he created here, even though the team didn't necessarily approve.
+- Model Evaluation:
+
+    From the summary table, our model has a mutiple R-squared of 0.9437, which means that the final model explains about 94 percent of variation in the data. In addition, the residual standard error of 0.09 indicates that the fit on training data is decent.
+    The diagnostic plots suggest that our model actually did a better job in predicting price for those properties in middle and high price ranges than lower price range. The residual plot has higher variance in the lower price range. In addition, the normal QQ plot generally follows a straight line, but with a heavier left tail. In the residual vs leverage plot, it can be observed that there are about 5 high leverage point, but they are not influential because no points have cook's distance greater than 0.5.
+    In conclusion, our final model did a good job in predicting the prices, especially for the properties in middle and high price ranges.
+      
+```{r}
+# extract the truth
+Y = data_test$price
+
+# make prediction based on specific model
+Yhat = predict(model.interact.reduced, newdata=data_test, interval="predict")
+
+# depending on the response transformation
+Yhat = exp(Yhat)
+
+performance(Y, Yhat)
+```
+
+
+- RMSE discussion and Model Testing:
+
+    The RMSE for our final model is 14983.7. After comparing with other groups in the leaderboard, we find that the bias for our model is actually the lowest. However, due to the variance and bias trade-off, our model has a higher deviance or variance for prediction, possibly resulting from outliers in the dataset. Another possible issue would be extrapolation, which affects the prediction accuracy for some properties with extreme prices. The coverage of prediction of 0.966 indicates that our model satisfactorily captures true prices within the prediction interval.
+
 
 ```{r}
+overvalued = data_test %>%
+                       mutate(price_to_pred_ratio = Y/Yhat[,1]) %>%
+                       top_n(10, price_to_pred_ratio) %>%
+                       dplyr::select(PID, price, price_to_pred_ratio, TotalSq, Overall.Qual, Neighborhood)
+undervalued = data_test %>%
+                       mutate(price_to_pred_ratio = Y/Yhat[,1]) %>%
+                       top_n(10, desc(price_to_pred_ratio)) %>%
+                       dplyr::select(PID, price, price_to_pred_ratio, TotalSq, Overall.Qual, Neighborhood)
+library(knitr)
+kable(overvalued)
+kable(undervalued)
+```
+
+- Model result:
+
+    The two tables show the top 10 most under- and over-priced properties based on our final model. The real-to-prediction ratio over 1 suggests over-priced and less than 1 under-priced. We also include some other features to compare the under and over-priced properties.
+
+
+
+
+
+## 5. Conclusion (10 points)
+
+In essence, the house condition, neighborhood, and total square footage were the most important predictors in our model. While this makes sense intuitively, confirming these predictors' relative importance in a quantitative analysis is reassuring. 
+
+Interestingly, the number of bathrooms is an independent predictor of house price. Who would have not know...not us!
+
+In reflecting upon the work we have done and our results, we have learned several things about the pricing of houses, as well as the data analysis process. 
+
+One of the key aspects that was apparent to us was how important our data-cleaning was to creating a successful model. In the early stages we had fit a model using the data more or less in its original form, with few modifications. After our meticulous data-cleaning session, the improvements were dramatic, as our bias dropped drastically and RMSE considerably.
+
+Another observation we take away from our project is the realization that OLS is often very useful, and that more advanced methods are not always optimal. Over the course of the project we attempted running Ridge, Lasso, Blasso, Trees, Random Forests, and Boosting, with linear regression of the same variables ultimately outperforming them all.
+
+Another thing we took away was the usefulness of tree models, not only in prediction, but also during model selection. We found boosting to be particularly useful in finalizing the variables we wanted to keep in our model through the examining the relative importance plot, and found a decision tree to be useful in indicating to us important interactions to consider in constructing our complex model.
+  
+  
+
+### Appendix
+
+One team member was really into making graphs that were subsequently rejected by the rest of the team. As a token of appreciation to the energetic team member, we include their visualizations as an appendix.
+
+```{r, echo=FALSE}
 library(treemap)
 
 tree.data = data_train %>% mutate(price.bin = ifelse(price <= 50000, "<= $50,000", ifelse(price > 50000 & price <= 100000, "$50,000-100,000", ifelse(price > 100000 & price <= 200000, "$100,000-200,000", ifelse(price > 200000 & price <= 300000, "$200,000-300,000", ifelse(price > 300000 & price <= 400000, "$300,000-400,000", ifelse(price > 400000 & price <= 500000, "$400,000-500,000", "> $500,000")))))))
@@ -382,10 +594,23 @@ tree.data = as.data.frame(tree.data)
 
 area.plot = treemap(tree.data, index=c("price.bin", "price"), vSize="TotalSq", type="index", palette="Oranges", algorithm="pivotSize", title="Effect of Total Square Footage on Price Range", fontsize.title = 14)
 
+theme_bw = function (base_size = 11, base_family = "") 
+{
+    theme_grey(base_size = base_size, base_family = base_family) %+replace% 
+        theme(panel.background = element_rect(fill = "aliceblue", 
+            colour = NA), panel.border = element_rect(fill = NA, 
+            colour = "Navy"), panel.grid.major = element_line(colour = "cornflowerblue"), 
+            panel.grid.minor = element_line(colour = "cornflowerblue", 
+                size = 0.25), strip.background = element_rect(fill = "cornflowerblue", 
+                colour = "Navy"), legend.key = element_rect(fill = "white", 
+                colour = NA), complete = TRUE)
+}
+
 data_train$Overall.Qual = as.numeric(data_train$Overall.Qual)
 quality.plot = ggplot(data_train, aes(x = Overall.Qual, y=price)) + geom_smooth(color="gold") + geom_count(color="red3") + theme_bw() + labs(x="Overall Quality", y="Price", title="Price by Overall Quality") + theme(plot.title = element_text(hjust=0.5))
 suppressMessages(plot(quality.plot))
 ```
+
 
 
 
