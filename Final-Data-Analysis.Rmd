@@ -26,62 +26,296 @@ and update accordingly rather than editing this.
 
 ### Read in Training Data
 
-To get started read in the training data:
+To get started read in the training data. 
 ```{r read-data}
+library(dplyr)
+library(tidyr)
 load("ames_train.Rdata")
+
+print(paste0("The dataset has ", dim(ames_train)[1], " number of observations and ", dim(ames_train)[2], " features"))
+
+#Variables with NA's and their proportion of missing data
+miss = apply(is.na(ames_train), 2, sum)
+miss_prop = round(miss[miss>0]/nrow(ames_train), 3)
+print(miss_prop) 
+which(miss_prop>0.5) # four features have greater than 50% of data "missing" -- drop these variables
+```
+
+
+Notes about data cleaning:
+
+We dropped “utilities” (type of utilities available) since in the training set, only 2 observations did not have all the utilities (electricity, gas, water and sewage). Intuitively, most modern property are equipped with these basic public utilities and keeping the variable would therefore be unnecessary. 
+
+We also dropped “condition 2” (proximity to various conditions if more than one is present) since it seemed redundant from our training set. Given Condition 1, only 12 properties were not close to normal conditions. 
+
+In the original scale, 1990 and 1900 would not be much different. Therefore, we changed the scale to the number of years since last construction or remodelling, subtracted from year 2010 (the end year in the dataset). 
+
+Another variable dropped in our model was “roof material” since only 1% of the property used material other than “standard composite shingle”. Similarly, “heating” was also dropped since more than 95% of the property has gas forced warm air furnace (GasA) instead of other types of heating.
+
+For “exterior quality” and “exterior condition”	, we recoded these ordinal variables to 1-5 to replace the original scale of conditions (from poor to excellent). Similarly, we recoded “basement exposure” and “basement rating” except that the new scale would start from 0 for properties without basement. 
+												
+Exter Qual (Ordinal): Evaluates the quality of the material on the exterior
+						
+      Ex       Excellent
+       Gd       Good
+       TA       Average/Typical
+       Fa       Fair
+       Po       Poor
+
+
+						
+Exter Cond (Ordinal): Evaluates the present condition of the material on the exterior
+
+      Ex       Excellent
+       Gd       Good
+       TA       Average/Typical
+       Fa       Fair
+       Po       Poor
+
+
+Continuous variables such as “1st floor square feet” and “2nd floor square feet” were log-transformed for interpretation purpose. 
+
+For variable “functional”, we recoded different ordinal levels into binary levels --- typical functionality or not, including minor and major deductions.  		
+
+We summed up the number of bathrooms to one continuous variable. Note that one half-bathroom would be coded as 0.5.	
+```{r}
+# Did not remove any NA entries in Lot.frontage
+
+data=ames_train
+
+data <- data  %>%
+  #filter(!is.na(Lot.Frontage)) %>% 
+  mutate(MS.SubClass= factor(MS.SubClass)) %>%
+  mutate(Alley =  factor(Alley, levels = levels(addNA(Alley)), labels = c(levels(Alley), "None"), exclude = NULL)) %>%
+  mutate(HouseAge = Yr.Sold- pmax(Year.Built, Year.Remod.Add))  %>%
+  filter(!is.na(Mas.Vnr.Area))  %>% 
+  mutate(Bsmt.YN = 1*(!is.na(Bsmt.Qual))) %>%
+  mutate(Bsmt.Qual =  factor(Bsmt.Qual, levels = levels(addNA(Bsmt.Qual)), labels = c(levels(Bsmt.Qual), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Qual = relevel(Bsmt.Qual, ref="None")) %>%
+  mutate(Bsmt.Cond =  factor(Bsmt.Cond, levels = levels(addNA(Bsmt.Cond)), labels = c(levels(Bsmt.Cond), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Cond = relevel(Bsmt.Cond, ref="None")) %>%
+  mutate(Bsmt.Exposure =  factor(Bsmt.Exposure, levels = levels(addNA(Bsmt.Exposure)), labels = c(levels(Bsmt.Exposure), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Exposure = relevel(Bsmt.Exposure, ref="None")) %>%
+  mutate(BsmtFin.Type.1=  factor(BsmtFin.Type.1, levels = levels(addNA(BsmtFin.Type.1)), labels = c(levels(BsmtFin.Type.1), "None"), exclude = NULL)) %>%
+  mutate(BsmtFin.Type.1 = relevel(BsmtFin.Type.1, ref="None")) %>%
+  mutate(BsmtFin.Type.2=  factor(BsmtFin.Type.2, levels = levels(addNA(BsmtFin.Type.2)), labels = c(levels(BsmtFin.Type.2), "None"), exclude = NULL)) %>%
+  mutate(BsmtFin.Type.2 = relevel(BsmtFin.Type.2, ref="None")) %>%
+  mutate(X12.SF= X1st.Flr.SF+ X2nd.Flr.SF)  %>%   
+  filter(!is.na(Bsmt.Full.Bath)) %>%
+  filter(!is.na(Bsmt.Half.Bath)) %>%
+  mutate(Baths = Bsmt.Full.Bath + 0.5*Bsmt.Half.Bath + Full.Bath + 0.5*Half.Bath) %>%
+  mutate(Fireplace.YN = 1*(Fireplaces>0)) %>%
+  mutate(Fireplace.Qu =  factor(Fireplace.Qu, levels = levels(addNA(Fireplace.Qu)), labels = c(levels(Fireplace.Qu), "None"), exclude = NULL)) %>%
+  mutate(Fireplace.Qu = relevel(Fireplace.Qu, ref="None")) %>%
+  mutate(Garage.YN = 1*(!is.na(Garage.Cond))) %>%
+  mutate(Garage.Type =  factor(Garage.Type, levels = levels(addNA(Garage.Type)), labels = c(levels(Garage.Type), "None"), exclude = NULL)) %>%
+  mutate(Garage.Type = relevel(Garage.Type, ref="None")) %>%
+  mutate(Garage.Finish =  factor(Garage.Finish, levels = levels(addNA(Garage.Finish)), labels = c(levels(Garage.Finish), "None"), exclude = NULL)) %>%
+  mutate(Garage.Finish = relevel(Garage.Finish, ref="None")) %>%
+  mutate(Garage.Qual =  factor(Garage.Qual, levels = levels(addNA(Garage.Qual)), labels = c(levels(Garage.Qual), "None"), exclude = NULL)) %>%
+  mutate(Garage.Qual = relevel(Garage.Qual, ref="None")) %>%
+  mutate(Garage.Cond =  factor(Garage.Cond, levels = levels(addNA(Garage.Cond)), labels = c(levels(Garage.Cond), "None"), exclude = NULL)) %>%
+  mutate(Garage.Cond = relevel(Garage.Cond, ref="None")) %>%
+  mutate(Porch.Area = Wood.Deck.SF+ Open.Porch.SF+Enclosed.Porch+X3Ssn.Porch + Screen.Porch) %>%
+  mutate(Pool.YN = 1*(Pool.Area>0)) %>%
+  mutate(Pool.QC =  factor(Pool.QC, levels = levels(addNA(Pool.QC)), labels = c(levels(Pool.QC), "None"), exclude = NULL)) %>%
+  mutate(Pool.QC = relevel(Pool.QC, ref="None")) %>%
+  mutate(Fence =  factor(Fence, levels = levels(addNA(Fence)), labels = c(levels(Fence), "None"), exclude = NULL)) %>%
+  mutate(Misc.Feature =  factor(Misc.Feature, levels = levels(addNA(Misc.Feature)), labels = c(levels(Misc.Feature), "None"), exclude = NULL)) %>%
+  mutate(Mo.Sold = as.factor(Mo.Sold)) %>%
+  mutate(Yr.Sold = as.factor(Yr.Sold)) %>%
+  dplyr::select(-Garage.Yr.Blt) %>%
+  mutate(Condition.1 = as.character(Condition.1)) %>%
+  mutate(Kitchen.Qual=plyr::mapvalues(Kitchen.Qual, from = c("Po", "Fa", "TA","Gd", "Ex" ), to = c("1", "2", "3", "4", "5"))) %>%
+  mutate(Kitchen.Qual = as.numeric(as.character(Kitchen.Qual))) %>%
+  mutate(Heating.QC=plyr::mapvalues(Heating.QC, from = c("Po", "Fa", "TA","Gd", "Ex" ), to = c("1", "2", "3", "4", "5"))) %>%
+  mutate(Heating.QC = as.numeric(as.character(Heating.QC))) %>%
+  mutate(Bsmt.Qual = droplevels(Bsmt.Qual)) %>%
+  mutate(Functional = droplevels(Functional)) %>%
+  mutate(Roof.Matl = droplevels(Roof.Matl))
+
+
+
+# Simplify Condition 1 (Park, Rail, Normal)
+ind_rail<-which(data$Condition.1=="RRNn" | data$Condition.1=="RRAn" | data$Condition.1=="RRNe" | data$Condition.1=="RRAe")
+ind_park<-which(data$Condition.1=="PosN" | data$Condition.1=="PosA")
+data$Condition.1[ind_rail]<-"Rail"
+data$Condition.1[ind_park]<-"Park"
+data = data %>% 
+  mutate(Condition.1 = factor(Condition.1)) %>%
+  mutate(Condition.1 = relevel(Condition.1, ref="Norm")) 
+
+# Eliminate the one entry in 'Exposure' that had been left completely empty
+data_train<-data
+data_train$Bsmt.Exposure[which(data_train$Bsmt.Exposure=="")]<-"None"
+data_train$Bsmt.Exposure<-droplevels(data_train$Bsmt.Exposure)
+
+data_train$Pool.Area<-data_train$Pool.Area+1
+data_train$Total.Bsmt.SF<-data_train$Total.Bsmt.SF+1
 ```
 
 The `Neighborhood` variable, typically of little interest other than to model the location effect, may be of more relevance when used with the [map](http://www.amstat.org/publications/jse/v19n3/decock/AmesResidential.pdf).
 
 We are restricting attention to just the "normal sales" condition.
 
+
 ## Part I: Simple Model
 
 In the first model you are allowed only limited manipulations of the original data set to predict the sales price `price`. You are allowed to take power transformations of the original variables [square roots, logs, inverses, squares, etc.] but you are NOT allowed to create interaction variables. This means that a variable may only be used once in an equation [if you use $ x^2$ don’t use $x$]. Additionally, you may eliminate any data points you deem unfit. This model should have a minimum r-square of 73% (in the original units) and contain at least 6 variables but fewer than 20.   
 
-```{r model1}
-model1 = lm(price ~ 1, data=ames_train)
+
+```{r}
+### perfromance evlaution function
+
+
+performance<- function(Y, Yhat){
+  
+  bias<- mean(Y-Yhat[,1])
+  
+  max.dev<-max(abs(Y-Yhat[,1]))
+  
+  mean.dev<-mean(abs(Y-Yhat[,1]))
+  
+  RMSE<-sqrt(mean((Y-Yhat[,1])^2))
+  
+  
+  coverage<-mean((Y>Yhat[,2]) & (Y<Yhat[,3]))
+  
+  out<-data.frame(bias=bias, max.dev=max.dev, mean.dev=mean.dev, RMES=RMSE, Coverage=coverage)
+  
+  return(out)
+}
+
 ```
 
 
+```{r}
+library(MASS)
 
-### Model Evaluation on Test Data
-Create predicted values for price using your model using the testing data
+model.BIC=lm(formula = log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 + 
+               Overall.Qual + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
+               Bsmt.Exposure + log(Total.Bsmt.SF) + Heating.QC + Central.Air + 
+               Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + 
+               Fireplaces + Garage.Cars + Paved.Drive + log(Pool.Area) + 
+               log(TotalSq), data = data_train)
+summary(model.BIC)
+plot(model.BIC)
+```
 
-```{r read-test-data}
+
+```{r}
+
+## Prepare test data
 load("ames_test.Rdata")
-```
 
-```{r predict-model1, echo=FALSE}
-Yhat = predict(model1, newdata=ames_test, interval = "pred")
-```
+data=ames_test
 
-You should save your predictions in a dataframe with columns for `PID`  (property identifier), `fit`, predicted values on the test data, and where possible `lwr` and `upr`, lower and upper 95% interval estimates for predicting `price`. 
+data <- data  %>%  
+  #filter(!is.na(Lot.Frontage)) %>% 
+  mutate(MS.SubClass= factor(MS.SubClass)) %>%
+  mutate(Alley =  factor(Alley, levels = levels(addNA(Alley)), labels = c(levels(Alley), "None"), exclude = NULL)) %>%
+  mutate(HouseAge = Yr.Sold- pmax(Year.Built, Year.Remod.Add))  %>%
+  #filter(!is.na(Mas.Vnr.Area))  %>% 
+  mutate(Bsmt.YN = 1*(!is.na(Bsmt.Qual))) %>%
+  mutate(Bsmt.Qual =  factor(Bsmt.Qual, levels = levels(addNA(Bsmt.Qual)), labels = c(levels(Bsmt.Qual), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Qual = relevel(Bsmt.Qual, ref="None")) %>%
+  mutate(Bsmt.Cond =  factor(Bsmt.Cond, levels = levels(addNA(Bsmt.Cond)), labels = c(levels(Bsmt.Cond), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Cond = relevel(Bsmt.Cond, ref="None")) %>%
+  mutate(Bsmt.Exposure =  factor(Bsmt.Exposure, levels = levels(addNA(Bsmt.Exposure)), labels = c(levels(Bsmt.Exposure), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Exposure = relevel(Bsmt.Exposure, ref="None")) %>%
+  mutate(BsmtFin.Type.1=  factor(BsmtFin.Type.1, levels = levels(addNA(BsmtFin.Type.1)), labels = c(levels(BsmtFin.Type.1), "None"), exclude = NULL)) %>%
+  mutate(BsmtFin.Type.1 = relevel(BsmtFin.Type.1, ref="None")) %>%
+  mutate(BsmtFin.Type.2=  factor(BsmtFin.Type.2, levels = levels(addNA(BsmtFin.Type.2)), labels = c(levels(BsmtFin.Type.2), "None"), exclude = NULL)) %>%
+  mutate(BsmtFin.Type.2 = relevel(BsmtFin.Type.2, ref="None")) %>%
+  mutate(X12.SF= X1st.Flr.SF+ X2nd.Flr.SF)  %>%   
+  #filter(!is.na(Bsmt.Full.Bath)) %>%
+  #filter(!is.na(Bsmt.Half.Bath)) %>%
+  mutate(Baths = Bsmt.Full.Bath + 0.5*Bsmt.Half.Bath + Full.Bath + 0.5*Half.Bath) %>%
+  mutate(Fireplace.YN = 1*(Fireplaces>0)) %>%
+  mutate(Fireplace.Qu =  factor(Fireplace.Qu, levels = levels(addNA(Fireplace.Qu)), labels = c(levels(Fireplace.Qu), "None"), exclude = NULL)) %>%
+  mutate(Fireplace.Qu = relevel(Fireplace.Qu, ref="None")) %>%
+  mutate(Garage.YN = 1*(!is.na(Garage.Cond))) %>%
+  mutate(Garage.Type =  factor(Garage.Type, levels = levels(addNA(Garage.Type)), labels = c(levels(Garage.Type), "None"), exclude = NULL)) %>%
+  mutate(Garage.Type = relevel(Garage.Type, ref="None")) %>%
+  mutate(Garage.Finish =  factor(Garage.Finish, levels = levels(addNA(Garage.Finish)), labels = c(levels(Garage.Finish), "None"), exclude = NULL)) %>%
+  mutate(Garage.Finish = relevel(Garage.Finish, ref="None")) %>%
+  mutate(Garage.Qual =  factor(Garage.Qual, levels = levels(addNA(Garage.Qual)), labels = c(levels(Garage.Qual), "None"), exclude = NULL)) %>%
+  mutate(Garage.Qual = relevel(Garage.Qual, ref="None")) %>%
+  mutate(Garage.Cond =  factor(Garage.Cond, levels = levels(addNA(Garage.Cond)), labels = c(levels(Garage.Cond), "None"), exclude = NULL)) %>%
+  mutate(Garage.Cond = relevel(Garage.Cond, ref="None")) %>%
+  mutate(Porch.Area = Wood.Deck.SF+ Open.Porch.SF+Enclosed.Porch+X3Ssn.Porch + Screen.Porch) %>%
+  mutate(Pool.YN = 1*(Pool.Area>0)) %>%
+  mutate(Pool.QC =  factor(Pool.QC, levels = levels(addNA(Pool.QC)), labels = c(levels(Pool.QC), "None"), exclude = NULL)) %>%
+  mutate(Pool.QC = relevel(Pool.QC, ref="None")) %>%
+  mutate(Fence =  factor(Fence, levels = levels(addNA(Fence)), labels = c(levels(Fence), "None"), exclude = NULL)) %>%
+  mutate(Misc.Feature =  factor(Misc.Feature, levels = levels(addNA(Misc.Feature)), labels = c(levels(Misc.Feature), "None"), exclude = NULL)) %>%
+  mutate(Mo.Sold = as.factor(Mo.Sold)) %>%
+  mutate(Yr.Sold = as.factor(Yr.Sold)) %>%
+  dplyr::select(-Garage.Yr.Blt) %>%
+  mutate(Condition.1 = as.character(Condition.1)) %>%
+  mutate(Kitchen.Qual=plyr::mapvalues(Kitchen.Qual, from = c("Po", "Fa", "TA","Gd", "Ex" ), to = c("1", "2", "3", "4", "5"))) %>%
+  mutate(Kitchen.Qual = as.numeric(as.character(Kitchen.Qual))) %>%
+  mutate(Heating.QC=plyr::mapvalues(Heating.QC, from = c("Po", "Fa", "TA","Gd", "Ex" ), to = c("1", "2", "3", "4", "5"))) %>%
+  mutate(Heating.QC = as.numeric(as.character(Heating.QC))) %>%
+  mutate(Bsmt.Qual = droplevels(Bsmt.Qual)) %>%
+  mutate(Functional = droplevels(Functional)) %>%
+  mutate(Roof.Matl = droplevels(Roof.Matl))
 
-```{r create }
+
+
+
+ind_rail<-which(data$Condition.1=="RRNn" | data$Condition.1=="RRAn" | data$Condition.1=="RRNe" | data$Condition.1=="RRAe")
+ind_park<-which(data$Condition.1=="PosN" | data$Condition.1=="PosA")
+data$Condition.1[ind_rail]<-"Rail"
+data$Condition.1[ind_park]<-"Park"
+
+
+
+data = data %>% 
+  mutate(Condition.1 = factor(Condition.1)) %>%
+  mutate(Condition.1 = relevel(Condition.1, ref="Norm")) 
+
+data_test=data
+
+
+data_test$Bsmt.Exposure[which(data_test$Bsmt.Exposure=="")]<-"None"
+data_test$Bsmt.Exposure<-droplevels(data_test$Bsmt.Exposure)
+
+
+
+data_test$Pool.Area<-data_test$Pool.Area+1
+data_test$Total.Bsmt.SF<-data_test$Total.Bsmt.SF+1
+
+
+# extract the truth
+Y = data_test$price
+
+# make prediction based on specific model
+
+
+
+Yhat = predict(model, newdata=data_test, interval="predict")
+
+# depending on the response transformation
+Yhat = exp(Yhat)
+
+
 # name dataframe as predictions! DO NOT CHANGE
 predictions = as.data.frame(Yhat)
-predictions$PID = ames_test$PID
+predictions$PID = data_test$PID
+
 save(predictions, file="predict.Rdata")
+
+performance(Y, Yhat)
+
+mean(Y-Yhat)
+  
+max(abs(Y-Yhat))
+  
+mean(abs(Y-Yhat[1]))
+  
+sqrt(mean((Y-Yhat)^2))
 ```
-
-Your models will be evaluated on the following criteria on the test data: 
-
-* Bias:  Average (Yhat-Y)  positive values indicate the model tends to overestimate price (on average) while negative values indicate the model tends to underestimate price.
-
-* Maximum Deviation:  Max |Y-Yhat| -  identifies the worst prediction  made in the validation data set.
-
-* Mean Absolute Deviation:  Average |Y-Yhat| - the average error (regardless of sign).
-
-* Root Mean Square Error: Sqrt Average (Y-Yhat)^2
-
-* Coverage:  Average( lwr < Y < upr) 
-
-In order to have a passing wercker badge, your file for predictions needs to be the same length as the test data, with three columns:  fitted values, lower CI and upper CI values in that order with names, fit, lwr, and upr respectively.  
-
-You will be able to see your scores on the score board (coming soon!).  They will be initialized by a predction based on the mean in the training data.
-
-_Model Check_ - Test your prediction on the first observation in the training and test data set to make sure that the model gives a reasonable answer and include this in a supplement of your report. This should be done BY HAND using a calculator (this means use the raw data from the original dataset and manually calculate all transformations and interactions with your calculator)! Models that do not give reasonable answers will be given a minimum 2 letter grade reduction. Also be careful as you cannot use certain transformations [log or inverse x] if a variable has values of 0.
 
 ### Part II: Complex Model
 
@@ -89,20 +323,63 @@ In this part you may go all out for constructing a best fitting model for predic
 
 Update your predictions using your complex model to provide point estimates and CI.
 
-```{r predict-model2, echo=FALSE}
-# replace model1 with model2
-predictions = as.data.frame(predict(model1, newdata=ames_test, interval = "pred"))
-predictions$PID = ames_test$PID
-save(predictions, file="predict.Rdata")
+```{r}
+model.interact.reduced=lm(log(price) ~ log(Lot.Area) + Condition.1 + Overall.Qual + 
+    Baths + Neighborhood + Garage.Cars + log(Total.Bsmt.SF) + 
+    log(TotalSq) + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
+    Bsmt.Exposure + Heating.QC + Central.Air + Bedroom.AbvGr + 
+    Kitchen.AbvGr + Kitchen.Qual + Functional + Fireplaces + 
+    Paved.Drive + Overall.Qual:Garage.Cars + Overall.Qual:log(TotalSq) + 
+    Garage.Cars:log(TotalSq) + Overall.Qual:Garage.Cars:log(TotalSq), 
+    data = data_train)
+summary(model.interact.reduced)
+plot(model.interact.reduced)
 ```
 
+```{r}
+library(ggplot2)
+#Data Vizes
+neighborhood.price.range = ggplot(data_train, aes(x = reorder(Neighborhood, desc(price), median), y = price, fill=price)) + geom_boxplot(colour="darkslateblue",fill=terrain.colors(28, alpha=1)) + theme_light() + theme(axis.text.x=element_text(angle=45,hjust=1,vjust=1)) + labs(x = "Neighborhood", y="Price", title="Boxplot of Price by Neighborhood") + theme(plot.title = element_text(hjust=0.5))
+
+plot(neighborhood.price.range)
+
+library(treemap)
+
+tree.data = data_train %>% mutate(price.bin = ifelse(price <= 50000, "<= $50,000", ifelse(price > 50000 & price <= 100000, "$50,000-100,000", ifelse(price > 100000 & price <= 200000, "$100,000-200,000", ifelse(price > 200000 & price <= 300000, "$200,000-300,000", ifelse(price > 300000 & price <= 400000, "$300,000-400,000", ifelse(price > 400000 & price <= 500000, "$400,000-500,000", "> $500,000")))))))
+tree.data = as.data.frame(tree.data)
+
+area.plot = treemap(tree.data, index=c("price.bin", "price"), vSize="Lot.Area", type="index", palette="YlGn", algorithm="pivotSize", title="Effect of Lot Area on Price Range", fontsize.title = 14)
+
+area.plot = treemap(tree.data, index=c("price.bin", "price"), vSize="TotalSq", type="index", palette="Oranges", algorithm="pivotSize", title="Effect of Total Square Footage on Price Range", fontsize.title = 14)
+
+
+data_train$Overall.Qual = as.numeric(data_train$Overall.Qual)
+quality.plot = ggplot(data_train, aes(x = Overall.Qual, y=price)) + geom_smooth(color="gold") + geom_count(color="red3") + theme_bw() + labs(x="Overall Quality", y="Price", title="Price by Overall Quality") + theme(plot.title = element_text(hjust=0.5))
+suppressMessages(plot(quality.plot))
+```
+
+```{r}
+#For calculating Top 10 undervalued and overvalued homes
+over.under = data.frame(value.diff = Yhat/Y)
+undervalued=dplyr::top_n(over.under, 10, value.diff)
+overvalued=dplyr::top_n(over.under, 10, desc(value.diff))
+top.10 = data.frame(under = dplyr::arrange(undervalued, desc(value.diff)), over = dplyr::arrange(overvalued,value.diff))
+library(knitr)
+kable(top.10, col.names=c("Top 10 Undervalued Houses", "Top 10 Overvalued Houses"))
+```
+
+
 You may iterate here as much as you like exploring different models until you are satisfied with your results.
+
+
+
 
 ### Part III: Write Up
 
 Once you are satisfied with your model, provide a write up of your data analysis project in a new Rmd file/pdf file: `writeup.Rmd` by copying over salient parts of your R notebook. The written assignment consists of five parts:
 
 1. Exploratory data analysis (20 points): must include three correctly labeled graphs and an explanation that highlight the most important features that went into your model building.
+
 
 2. Development and assessment of an initial model from Part I (10 points)
 
@@ -115,6 +392,8 @@ Once you are satisfied with your model, provide a write up of your data analysis
 * RMSE: must include an RMSE and an explanation  (other criteria desirable)
 
 * Model testing: must include an explanation
+
+
 
 3. Development of the final model (20 points)
 
@@ -136,7 +415,9 @@ Once you are satisfied with your model, provide a write up of your data analysis
 
 * Model testing : must include a discussion
 
-* Model result: must include a selection of the top 10 undervalued and overvalued  houses
+* Model result: must include a selection of the top 10 undervalued and overvalued houses
+
+
 
 5. Conclusion (10 points): must include a summary of results and a discussion of things learned
 
@@ -147,6 +428,8 @@ Create predictions for the validation data from your final model and write out t
 This should have the same format as the models in Part I and II.
 
 10 points
+
+
 
 ### Class Presentations
 
