@@ -222,7 +222,43 @@ model.BIC=lm(formula = log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 +
                Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + 
                Fireplaces + Garage.Cars + Paved.Drive + log(Pool.Area) + 
                log(TotalSq), data = data_train)
+summary(model.BIC)
+plot(model.BIC)
 
+modelinteract = lm(log(price) ~ log(Lot.Area) + Condition.1 + Overall.Qual:Baths:Neighborhood + Overall.Qual:Baths + Overall.Qual:Neighborhood + Overall.Qual + Baths + Neighborhood + Overall.Qual:Baths:log(Total.Bsmt.SF) + Overall.Qual:log(Total.Bsmt.SF) + Overall.Qual:Garage.Cars:log(Total.Bsmt.SF):log(TotalSq) + Overall.Qual:Garage.Cars:log(TotalSq) + Overall.Qual:Garage.Cars + Overall.Qual:log(TotalSq) + Garage.Cars:log(Total.Bsmt.SF):log(TotalSq) + Garage.Cars:log(TotalSq) + log(Total.Bsmt.SF):log(TotalSq) + Garage.Cars + log(Total.Bsmt.SF) + log(TotalSq) + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + Bsmt.Exposure + Heating.QC + Central.Air + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + Fireplaces + Paved.Drive + log(Pool.Area), data = data_train)
+
+model.interact.reduced=lm(log(price) ~ log(Lot.Area) + Condition.1 + Overall.Qual + 
+    Baths + Neighborhood + Garage.Cars + log(Total.Bsmt.SF) + 
+    log(TotalSq) + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
+    Bsmt.Exposure + Heating.QC + Central.Air + Bedroom.AbvGr + 
+    Kitchen.AbvGr + Kitchen.Qual + Functional + Fireplaces + 
+    Paved.Drive + Overall.Qual:Garage.Cars + Overall.Qual:log(TotalSq) + 
+    Garage.Cars:log(TotalSq) + Overall.Qual:Garage.Cars:log(TotalSq), 
+    data = data_train)
+summary(model.interact.reduced)
+plot(model.interact.reduced)
+
+
+step(modelinteract, k=log(nrow(data_train)))
+library(tree)
+tree = tree(log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 + 
+               Overall.Qual + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
+               Bsmt.Exposure + log(Total.Bsmt.SF) + Heating.QC + Central.Air + 
+               Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + 
+               Fireplaces + Garage.Cars + Paved.Drive + log(Pool.Area) + 
+               log(TotalSq), data = data_train)
+# use cross-validation to prune
+cv.tree = cv.tree(tree)
+plot(cv.tree$size, cv.tree$dev, type='b')
+bb = cv.tree$size[which.min(cv.tree$dev)]
+
+# prune the tree for the size that is optimal based on CV
+prune.tree=prune.tree(tree, best=bb)
+
+# plot the pruned tree
+plot(prune.tree)
+text(prune.tree, pretty=0)
+prune.tree
 
 summary(model.BIC)
 plot(model.BIC)
@@ -349,11 +385,25 @@ data_test$Total.Bsmt.SF<-data_test$Total.Bsmt.SF+1
 Y = data_test$price
 
 # make prediction based on specific model
+<<<<<<< HEAD
 Yhat = predict(model.BIC, newdata=data_test, interval="predict")
+=======
+
+
+
+Yhat = predict(model, newdata=data_test, interval="predict")
+>>>>>>> e74455abdda02c63759edef3466165f42bd51ab9
 
 # depending on the response transformation
 Yhat = exp(Yhat)
 
+#For calculating Top 10 undervalued and overvalued homes
+over.under = data.frame(value.diff = Yhat/Y)
+undervalued=dplyr::top_n(over.under, 10, value.diff)
+overvalued=dplyr::top_n(over.under, 10, desc(value.diff))
+top.10 = data.frame(under = dplyr::arrange(undervalued, desc(value.diff)), over = dplyr::arrange(overvalued,value.diff))
+library(knitr)
+kable(top.10, col.names=c("Top 10 Undervalued Houses", "Top 10 Overvalued Houses"))
 
 # name dataframe as predictions! DO NOT CHANGE
 predictions = as.data.frame(Yhat)
@@ -362,6 +412,14 @@ predictions$PID = data_test$PID
 save(predictions, file="predict.Rdata")
 
 performance(Y, Yhat)
+
+mean(Y-Yhat)
+  
+max(abs(Y-Yhat))
+  
+mean(abs(Y-Yhat[1]))
+  
+sqrt(mean((Y-Yhat)^2))
 ```
 
 
@@ -422,15 +480,37 @@ y_hat= y_hat[,c(3,1,2)]
 
 performance(data_test$price, y_hat)
 ```
+```{r}
+#Experimentation with GAM
+library(mgcv)
+set.seed(1)
+
+##GAM model 1: without interaction
+
+gam_model_1 = bam(price ~ s(Lot.Area, k=3) + s(Neighborhood, k=3, bs="re") + s(Condition.1, k=3, bs="re") + 
+               Overall.Qual + Overall.Cond + s(HouseAge, k=3) + s(Foundation, k=3, bs="re") + s(Bsmt.Qual, k=3, bs="re") + 
+               s(Bsmt.Exposure, k=3, bs="re") + s(Total.Bsmt.SF, k=3) + s(Heating.QC, k=3, bs="re") + Central.Air + 
+               s(Baths, k=3) + Bedroom.AbvGr + Kitchen.AbvGr + s(Kitchen.Qual, k=3, bs="re") + s(Functional, k=3, bs="re") +
+               Fireplaces + Garage.Cars + Paved.Drive + s(Pool.Area, k=3) + 
+               s(TotalSq, k=3), family=gaussian(link = "identity"), data = data_train)
+
+Yhat = predict.bam(gam_model_1, newdata = data_test, type = "response")
+```
+
 
 
 
 
 ```{r}
 library(ggplot2)
+<<<<<<< HEAD
 #Data Vizualizations
 # neighborhood.price.range = ggplot(data_train, aes(x = log(price), y = reorder(Neighborhood, desc(log(price)), median))) +
 #   geom_polygon(color="Black",size = 1, alpha=1) + geom_point(stat="identity", aes(color="red3"), size=1.5) + theme_light() + coord_flip() + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(y="Neighborhood")
+=======
+#Data Vizes
+neighborhood.price.range = ggplot(data_train, aes(x = reorder(Neighborhood, desc(price), median), y = price, fill=price)) + geom_boxplot(colour="darkslateblue",fill=terrain.colors(28, alpha=1)) + theme_light() + theme(axis.text.x=element_text(angle=45,hjust=1,vjust=1)) + labs(x = "Neighborhood", y="Price", title="Boxplot of Price by Neighborhood") + theme(plot.title = element_text(hjust=0.5))
+>>>>>>> e74455abdda02c63759edef3466165f42bd51ab9
 
 neighborhood.price.range = ggplot(data_train, aes(y = log(price), x = reorder(Neighborhood, desc(log(price)), median))) + 
                            geom_violin() + theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
@@ -443,12 +523,16 @@ plot(neighborhood.price.range)
 library(treemap)
 
 tree.data = data_train %>% mutate(price.bin = ifelse(price <= 50000, "<= $50,000", ifelse(price > 50000 & price <= 100000, "$50,000-100,000", ifelse(price > 100000 & price <= 200000, "$100,000-200,000", ifelse(price > 200000 & price <= 300000, "$200,000-300,000", ifelse(price > 300000 & price <= 400000, "$300,000-400,000", ifelse(price > 400000 & price <= 500000, "$400,000-500,000", "> $500,000")))))))
+tree.data = as.data.frame(tree.data)
 
-area.plot = treemap(tree.data, index="price.bin", vSize="Lot.Area", type="index", palette="YlGn", algorithm="pivotSize", title="Effect of Lot Area on Price Range", fontsize.title = 14)
+area.plot = treemap(tree.data, index=c("price.bin", "price"), vSize="Lot.Area", type="index", palette="YlGn", algorithm="pivotSize", title="Effect of Lot Area on Price Range", fontsize.title = 14)
+
+area.plot = treemap(tree.data, index=c("price.bin", "price"), vSize="TotalSq", type="index", palette="Oranges", algorithm="pivotSize", title="Effect of Total Square Footage on Price Range", fontsize.title = 14)
+
 
 data_train$Overall.Qual = as.numeric(data_train$Overall.Qual)
-quality.plot = ggplot(train, aes(x = Overall.Qual, y=price)) + geom_smooth(color="gold3") + geom_count(color="red3") + theme_minimal()
-plot(quality.plot)
+quality.plot = ggplot(data_train, aes(x = Overall.Qual, y=price)) + geom_smooth(color="gold") + geom_count(color="red3") + theme_bw() + labs(x="Overall Quality", y="Price", title="Price by Overall Quality") + theme(plot.title = element_text(hjust=0.5))
+suppressMessages(plot(quality.plot))
 ```
 
 
