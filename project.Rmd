@@ -42,6 +42,49 @@ which(miss_prop>0.5) # four features have greater than 50% of data "missing" -- 
 ```
 
 
+
+```{r}
+levels(ames_train$Neighborhood)
+
+# [1] "Blmngtn" "Blueste" "BrDale"  "BrDale" "ClearCr" "CollgCr" "Crawfor" "Edwards" "Gilbert" "Greens"  "GrnHill"
+# [12] "IDOTRR"  "Landmrk" "MeadowV" "Mitchel" "NAmes"   "NoRidge" "NPkVill" "NridgHt" "NWAmes"  "OldTown" "Sawyer" 
+# [23] "SawyerW" "Somerst" "StoneBr" "SWISU"   "Timber"  "Veenker"
+
+ames_train$distance<-0
+
+ames_train$distance[ames_train$Neighborhood=="Blmngtn"] = 1
+ames_train$distance[ames_train$Neighborhood=="Blueste"] = 1
+ames_train$distance[ames_train$Neighborhood=="BrDale"] = 1
+ames_train$distance[ames_train$Neighborhood=="BrDale"] = 1
+ames_train$distance[ames_train$Neighborhood=="ClearCr"] = 1
+ames_train$distance[ames_train$Neighborhood=="CollgCr"] = 1
+ames_train$distance[ames_train$Neighborhood=="Crawfor"] = 1
+ames_train$distance[ames_train$Neighborhood=="Edwards"] = 1
+ames_train$distance[ames_train$Neighborhood=="Gilbert"] = 1
+ames_train$distance[ames_train$Neighborhood=="Greens"] = 1
+ames_train$distance[ames_train$Neighborhood=="GrnHill"] = 1
+ames_train$distance[ames_train$Neighborhood=="IDOTRR"] = 1
+ames_train$distance[ames_train$Neighborhood=="Landmrk"] = 1
+ames_train$distance[ames_train$Neighborhood=="MeadowV"] = 1
+ames_train$distance[ames_train$Neighborhood=="Mitchel"] = 1
+ames_train$distance[ames_train$Neighborhood=="NAmes"] = 1
+ames_train$distance[ames_train$Neighborhood=="NoRidge"] = 1
+ames_train$distance[ames_train$Neighborhood=="NPkVill"] = 1
+ames_train$distance[ames_train$Neighborhood=="NridgHt"] = 1
+ames_train$distance[ames_train$Neighborhood=="NWAmes"] = 1
+ames_train$distance[ames_train$Neighborhood=="OldTown"] = 1
+ames_train$distance[ames_train$Neighborhood=="Sawyer"] = 1
+ames_train$distance[ames_train$Neighborhood=="SawyerW"] = 1
+ames_train$distance[ames_train$Neighborhood=="Somerst"] = 1
+ames_train$distance[ames_train$Neighborhood=="StoneBr"] = 1
+ames_train$distance[ames_train$Neighborhood=="SWISU"] = 1
+ames_train$distance[ames_train$Neighborhood=="Timber"] = 1
+ames_train$distance[ames_train$Neighborhood=="Veenker"] = 1
+
+
+```
+
+
 Notes about data cleaning:
 
 We dropped “utilities” (type of utilities available) since in the training set, only 2 observations did not have all the utilities (electricity, gas, water and sewage). Intuitively, most modern property are equipped with these basic public utilities and keeping the variable would therefore be unnecessary. 
