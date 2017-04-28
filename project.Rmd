@@ -239,6 +239,8 @@ sum(id)
 
 aa<-results$coefficients[id,]
 
+aa
+
 
 step(modelinteract, k=log(nrow(data_train)))
 library(tree)
