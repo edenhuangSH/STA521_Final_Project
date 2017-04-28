@@ -13,10 +13,15 @@ For more details on authoring R presentations please visit <https://support.rstu
 - Bullet 2
 - Bullet 3
 
+
+
 Data Visualizations
 ========================================================
+title: false
+width: 1920
+height: 1080
 
-```{r, echo=FALSE}
+```{r myplot,echo=FALSE,fig.width=6,fig.height=4.5,dpi=300,out.width="1920px",out.height="1080px"}
 library(dplyr)
 library(tidyr)
 load("ames_train.Rdata")
@@ -95,13 +100,59 @@ data_train$Bsmt.Exposure<-droplevels(data_train$Bsmt.Exposure)
 data_train$Pool.Area<-data_train$Pool.Area+1
 data_train$Total.Bsmt.SF<-data_train$Total.Bsmt.SF+1
 
+
+
+# Multiple plot function
+#
+# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
+# - cols:   Number of columns in layout
+# - layout: A matrix specifying the layout. If present, 'cols' is ignored.
+#
+# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
+# then plot 1 will go in the upper left, 2 will go in the upper right, and
+# 3 will go all the way across the bottom.
+#
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  library(grid)
+
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+
+  numPlots = length(plots)
+
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                    ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+
+ if (numPlots==1) {
+    print(plots[[1]])
+
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+
 library(ggplot2)
 library(treemap)
 
 #Data Vizes
 neighborhood.price.range = ggplot(data_train, aes(x = reorder(Neighborhood, desc(price), median), y = price, fill=price)) + geom_boxplot(colour="darkslateblue",fill=terrain.colors(28, alpha=1)) + theme_light() + theme(axis.text.x=element_text(angle=45,hjust=1,vjust=1)) + labs(x = "Neighborhood", y="Price [USD]", title="Boxplot of Price by Neighborhood") + theme(plot.title = element_text(hjust=0.5))
-
-plot(neighborhood.price.range)
 
 ptrain_data = data_train
 ptrain_data = ptrain_data%>%mutate(Overall.Qual.level1 = ifelse(Overall.Qual %in% c(1,2,3,4), "low", Overall.Qual))%>%
@@ -109,8 +160,9 @@ ptrain_data = ptrain_data%>%mutate(Overall.Qual.level1 = ifelse(Overall.Qual %in
  mutate(Overall.Qual.level3 = ifelse(Overall.Qual.level2 %in% c("8","9","10"),"high",Overall.Qual.level2))
 #sum(ptrain_data$Overall.Qual.level3 %in% c("low","med","high"))
 
-f = qplot(x = TotalSq, y = price, data = ptrain_data, color = factor(Overall.Qual.level3)) + theme_classic()
-f + labs(color='Overall Quality') + xlab("Total Square Feet") + ylab("Price")+ ggtitle("Sale Price versus Total Square Feet by Overall Quality")
+f = qplot(x = TotalSq, y = price, data = ptrain_data, color = factor(Overall.Qual.level3)) + theme_classic() + labs(color='Overall Quality') + xlab("Total Square Feet") + ylab("Price")+ ggtitle("Sale Price versus Total Square Feet by Overall Quality")
+
+multiplot(neighborhood.price.range)
 ```
 
 Data Visualizations
@@ -119,3 +171,17 @@ Data Visualizations
 ```{r, echo=FALSE}
 plot(cars)
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
