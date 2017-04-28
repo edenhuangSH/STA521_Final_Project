@@ -185,7 +185,6 @@ model.BIC=lm(formula = log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 +
                Baths + Kitchen.AbvGr + Kitchen.Qual + Functional + 
                Fireplaces + Garage.Cars + Paved.Drive +
                log(TotalSq), data = data_train)
-
 ```
 
 
