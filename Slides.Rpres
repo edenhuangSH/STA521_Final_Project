@@ -6,27 +6,8 @@ autosize: true
 
 Price By Neighborhood
 ========================================================
-<<<<<<< HEAD
-
-For more details on authoring R presentations please visit <https://support.rstudio.com/hc/en-us/articles/200486468>.
-
-- Bullet 1
-- Bullet 2
-- Bullet 3
-
-
-
-Data Visualizations
-========================================================
-title: false
-width: 1920
-height: 1080
-
-```{r myplot,echo=FALSE,fig.width=6,fig.height=4.5,dpi=300,out.width="1920px",out.height="1080px"}
-=======
 title: false
 ```{r myplot,echo=FALSE,fig.align='center',fig.width=8,fig.height=5,dpi=300,out.width="1920px",out.height="1100px"}
->>>>>>> 8eeefb2f7a1bb171d27a81787ca82eb7e04c2274
 library(dplyr)
 library(tidyr)
 load("ames_train.Rdata")
@@ -105,52 +86,18 @@ data_train$Bsmt.Exposure<-droplevels(data_train$Bsmt.Exposure)
 data_train$Pool.Area<-data_train$Pool.Area+1
 data_train$Total.Bsmt.SF<-data_train$Total.Bsmt.SF+1
 
-
-
-# Multiple plot function
-#
-# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
-# - cols:   Number of columns in layout
-# - layout: A matrix specifying the layout. If present, 'cols' is ignored.
-#
-# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
-# then plot 1 will go in the upper left, 2 will go in the upper right, and
-# 3 will go all the way across the bottom.
-#
-multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
-  library(grid)
-
-  # Make a list from the ... arguments and plotlist
-  plots <- c(list(...), plotlist)
-
-  numPlots = length(plots)
-
-  # If layout is NULL, then use 'cols' to determine layout
-  if (is.null(layout)) {
-    # Make the panel
-    # ncol: Number of columns of plots
-    # nrow: Number of rows needed, calculated from # of cols
-    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
-                    ncol = cols, nrow = ceiling(numPlots/cols))
-  }
-
- if (numPlots==1) {
-    print(plots[[1]])
-
-  } else {
-    # Set up the page
-    grid.newpage()
-    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
-
-    # Make each plot, in the correct location
-    for (i in 1:numPlots) {
-      # Get the i,j matrix positions of the regions that contain this subplot
-      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
-
-      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
-                                      layout.pos.col = matchidx$col))
-    }
-  }
+theme_light = function (base_size = 11, base_family = "") 
+{
+    theme_grey(base_size = base_size, base_family = base_family) %+replace% 
+        theme(panel.background = element_rect(fill = "lavender", 
+            colour = NA), panel.border = element_rect(fill = NA, 
+            colour = "darkslateblue", size = 0.5), panel.grid.major = element_line(colour = "lavenderblush3", 
+            size = 0.25), panel.grid.minor = element_line(colour = "lavenderblush3", 
+            size = 0.125), axis.ticks = element_line(colour = "darkslateblue", 
+            size = 0.25), legend.key = element_rect(fill = "white", 
+            colour = NA), strip.background = element_rect(fill = "darkslateblue", 
+            colour = NA), strip.text = element_text(colour = "white", 
+            size = rel(0.8)), complete = TRUE)
 }
 
 library(ggplot2)
@@ -159,8 +106,6 @@ library(treemap)
 #Data Vizes
 neighborhood.price.range = ggplot(data_train, aes(x = reorder(Neighborhood, desc(price), median), y = price, fill=price)) + geom_boxplot(colour="darkslateblue",fill=terrain.colors(28, alpha=1)) + theme_light() + theme(axis.text.x=element_text(angle=45,hjust=1,vjust=1)) + labs(x = "Neighborhood", y="Price [USD]", title="Boxplot of Price by Neighborhood") + theme(plot.title = element_text(hjust=0.5))
 
-<<<<<<< HEAD
-=======
 plot(neighborhood.price.range)
 ```
 
@@ -168,21 +113,14 @@ Price By Total Square Footage and Overall Quality
 ========================================================
 title:false
 ```{r myplot1,echo=FALSE,fig.align='center',fig.width=8,fig.height=5,dpi=300,out.width="1920px",out.height="1100px"}
->>>>>>> 8eeefb2f7a1bb171d27a81787ca82eb7e04c2274
 ptrain_data = data_train
 ptrain_data = ptrain_data%>%mutate(Overall.Qual.level1 = ifelse(Overall.Qual %in% c(1,2,3,4), "low", Overall.Qual))%>%
  mutate(Overall.Qual.level2 = ifelse(Overall.Qual.level1 %in% c("5","6","7"),"med",Overall.Qual.level1))%>%
  mutate(Overall.Qual.level3 = ifelse(Overall.Qual.level2 %in% c("8","9","10"),"high",Overall.Qual.level2))
 #sum(ptrain_data$Overall.Qual.level3 %in% c("low","med","high"))
 
-<<<<<<< HEAD
-f = qplot(x = TotalSq, y = price, data = ptrain_data, color = factor(Overall.Qual.level3)) + theme_classic() + labs(color='Overall Quality') + xlab("Total Square Feet") + ylab("Price")+ ggtitle("Sale Price versus Total Square Feet by Overall Quality")
-
-multiplot(neighborhood.price.range)
-=======
 f = qplot(x = TotalSq, y = price, data = ptrain_data, color = factor(Overall.Qual.level3)) + theme_classic()
 f + labs(color='Overall Quality') + xlab("Total Square Feet") + ylab("Price")+ ggtitle("Sale Price versus Total Square Feet by Overall Quality") + theme(plot.title = element_text(hjust=0.5))
->>>>>>> 8eeefb2f7a1bb171d27a81787ca82eb7e04c2274
 ```
 
 Visualizations Rejected by the Group
@@ -199,26 +137,22 @@ Rejected Graphic
 ==========================================================
 title:false
 ```{r myplot3,echo=FALSE,fig.align='center',fig.width=8,fig.height=5,dpi=300,out.width="1920px",out.height="1100px"}
+theme_bw = function (base_size = 11, base_family = "") 
+{
+    theme_grey(base_size = base_size, base_family = base_family) %+replace% 
+        theme(panel.background = element_rect(fill = "aliceblue", 
+            colour = NA), panel.border = element_rect(fill = NA, 
+            colour = "Navy"), panel.grid.major = element_line(colour = "cornflowerblue"), 
+            panel.grid.minor = element_line(colour = "cornflowerblue", 
+                size = 0.25), strip.background = element_rect(fill = "cornflowerblue", 
+                colour = "Navy"), legend.key = element_rect(fill = "white", 
+                colour = NA), complete = TRUE)
+}
 data_train$Overall.Qual = as.numeric(data_train$Overall.Qual)
 quality.plot = ggplot(data_train, aes(x = Overall.Qual, y=price)) + geom_smooth(color="gold") + geom_count(color="red3") + theme_bw() + labs(x="Overall Quality", y="Price", title="Price by Overall Quality") + theme(plot.title = element_text(hjust=0.5))
 suppressMessages(plot(quality.plot))
 ```
 
-<<<<<<< HEAD
-
-
-
-
-
-
-
-
-
-
-
-
-
-=======
 (Statisticians do it with) Models
 ==========================================================
 - The explanatory variables for our simple model included log(Lot.Area), Neighborhood, Condition.1, Overall.Qual, Overall.Cond, HouseAge, Foundation, Bsmt.Qual, Bsmt.Exposure, log(Total.Bsmt.SF), Central.Air, Baths, Kitchen.AbvGr, Kitchen.Qual, Functional, Fireplaces, Garage.Cars, Paved.Drive, log(TotalSq)
@@ -228,4 +162,3 @@ suppressMessages(plot(quality.plot))
 ===========================================================
 
 The End
->>>>>>> 8eeefb2f7a1bb171d27a81787ca82eb7e04c2274
