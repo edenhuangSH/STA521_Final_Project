@@ -189,6 +189,13 @@ Beyond the RMSE, we were very pleased to see a bias relatively closer to zero th
 
 5. Conclusion (10 points): must include a summary of results and a discussion of things learned
 
+  In reflecting upon the work we have done and our results, we have learned several things about the pricing of houses, as well as the data analysis process.
+  One of the key aspects that was apparent to us was how important our data-cleaning was to creating a successful model. In the early stages we had fit a model using the data more or less in its original form, with few modifications. After our meticulous data-cleaning session, the improvements were dramatic, as our bias dropped drastically and RMSE considerably.
+  Another observation we take away from our project is the realization that OLS is often very useful, and that more advanced methods are not always optimal. Over the course of the project we attempted running Ridge, Lasso, Blasso, Trees, Random Forests, and Boosting, with linear regression of the same variables ultimately outperforming them all.
+  Another thing we took away was the usefulness of tree models, not only in prediction, but also during model selection. We found boosting to be particularly useful in finalizing the variables we wanted to keep in our model through the examining the relative importance plot, and found a decision tree to be useful in indicating to us important interactions to consider in constructing our complex model.
+  Finally, we also learned some things along the way about the most important predictors of housing prices. From our model, and boosting in particular, we found that a house's overall quality, its neighborhood, and its total square footage were the most important predictors in our model. While this makes intuitive sense, seeing the relative importance from actual data helped clarify the most important inputs to housing price.
+  
+
 
 
 
