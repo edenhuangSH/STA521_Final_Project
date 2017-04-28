@@ -160,21 +160,23 @@ The red clusters represent the counts of the number of observations that have a 
 
 2. Development and assessment of an initial model from Part I (10 points)
 
+Initial Model and Model Selection
 
-During the development of our project, we used random forests and boosting not only in our quest to find the best performing model, but also as a useful tool for exploratory data analysis. A particularly useful feature in this regard was the relative importance plot, which revealed that Neighborhood, Lot Area, and Overall Quality were the most important variables. In response to this, we chose to create plots highlighting the relationships between Price and these three important features.
+  Prior to selecting the variables for our simple model, we engaged in very scrupulous data cleaning. We used a variety of techniques to do this, including converting variables to factors to account for non-linearity (e.g. MS.Subclass, Alley, Bsmt.Qual, Bsmt.Cond, etc.), aggregating like variables, such as combining porch square footage for different types of porches and creating a variable for total number of baths, accounting for the NA’s by adding levels named “None” where appropriate, creating a variable for house age- calculated by subtracting the max of year built and year remodeled from the year sold- and filtering out NA’s for a few particular variables with few NA’s.
+  Following our data cleaning, we engaged in several exploratory exercises. We first fit a full model, including all of our variables, and examined its residual plots for indication as to the changes we should make. We detected some non-linearity in the data, seeing a trend in the residual and standardized residual plots, and decided to make a log transformation of our response variable, which improved the model fit. Taking a note from Appendix A in Gelman's book, we also automatically logged all continuous explanatory variables, as this helps provide a multiplicative effect to the model.
+  Having improved our model fit, we then went about variable selection. We found that running a step function evaluated using the Bayesian Information Criterion brought us down close to 20 predictors, giving us 22. We then used a boosted tree model to inform us of the relative importance of the variables and removed log(Pool.Area), Bedrooms.AbvGr, and Heating.QC, as these variables had the lowest relative importance. This brought is to our finalized simple model, with 19 predictors.
+  
+Residual Plots
 
+  The residual plots for our simple model display favorable results. The residual vs. fitted plot shows little to no pattern, and while the scale-location plot has a slight pattern, it is not severe. While there are a few outliers displayed on the Normal Q-Q plot, most observations fall within 4 standard deviations, with the majority falling very close to or on the one-to-one line. Finally, after having the function removed observations with leverage 1, we observe a favorable leverage plot, with no observations exceeding .5.
+  
+RMSE
 
-* Initial model: must include a summary table and an explanation/discussion for variable selection.  Interpretation of coefficients desirable for full points.
+Our RMSE for the simple model evaluated on the test set comes to 15,477.42, which is only ~8% of the mean house price. This implies that the RMSE is fairly small.
 
-* Model selection: must include a discussion
+Model Testing
 
-* Residual: must include a residual plot and a discussion
-
-* RMSE: must include an RMSE and an explanation  (other criteria desirable)
-
-* Model testing: must include an explanation
-
-
+Beyond the RMSE, we were very pleased to see a bias relatively closer to zero than our fellow teams, at -165.05. We observed a maximum deviation of 66,474.27, a mean deviation of 11,458.19, and coverage of 96.2%. The coverage is very favorable and, given that the mean deviation is less than 10% of the mean housing price for the training set, we are please with these results.
 
 3. Development of the final model (20 points)
 
