@@ -1,3 +1,5 @@
+<<<<<<< HEAD
+=======
 ---
 title: "Final Data Analysis Project"
 date:  "Write up due April 28 at 5 pm"
@@ -546,3 +548,4 @@ We will select winners based on the above criteria and overall performance.
 
 
 Finally your repo should have: `writeup.Rmd`, `writeup.pdf`, `slides.Rmd` (and whatever output you use for the presentation) and `predict.Rdata` and `predict-validation.Rdata`.
+>>>>>>> 8eeefb2f7a1bb171d27a81787ca82eb7e04c2274

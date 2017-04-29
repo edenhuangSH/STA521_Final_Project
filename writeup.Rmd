@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-d
+
 ## 1. Exploratory data analysis (20 points)
 
 We first performed basic checks on the training data to identify predictors with (truly) missing entries and potential abnormalities. The variable lot frontage was identified to have 282 or 18.8% missing entries. We removed this predictor, and verified at a later stage that adding it in would not lead to better model predictions.
@@ -508,6 +508,63 @@ plot(model.interact.reduced)
 * Model result: must include a selection of the top 10 undervalued and overvalued houses
 
 
+```{r}
+par(mfrow=c(2,2))
+plot(model.interact.reduced)
+summary(model.interact.reduced)
+```
+
+- Residual:
+
+     Pardoe's paper "Modeling home prices using realtor data" suggests an issue of hetereoscedasticity with variation increasing with sale price. It is not an issue in our model. The residual plot shows that the variance is relatively constant and no obvious patterns exist, which suggests that constant variance assumption of residuals is well satisfied. However, there are some outliers in the bottom-left of the plot where properties are overvalued. In addition, the variance in the left part of the plot has a slightly higher varaince in predicted prices. We do not throw away outliers in the model.
+
+
+- Model Evaluation:
+
+    From the summary table, our model has a mutiple R-squared of 0.9437, which means that the final model explains about 94 percent of variation in the data. In addition, the residual standard error of 0.09 indicates that the fit on training data is decent.
+    The diagnostic plots suggest that our model actually did a better job in predicting price for those properties in middle and high price ranges than lower price range. The residual plot has higher variance in the lower price range. In addition, the normal QQ plot generally follows a straight line, but with a heavier left tail. In the residual vs leverage plot, it can be observed that there are about 5 high leverage point, but they are not influential because no points have cook's distance greater than 0.5.
+    In conclusion, our final model did a good job in predicting the prices, especially for the properties in middle and high price ranges.
+      
+```{r}
+# extract the truth
+Y = data_test$price
+
+# make prediction based on specific model
+Yhat = predict(model.interact.reduced, newdata=data_test, interval="predict")
+
+# depending on the response transformation
+Yhat = exp(Yhat)
+
+performance(Y, Yhat)
+```
+
+
+- RMSE discussion and Model Testing:
+
+    The RMSE for our final model is 14983.7. After comparing with other groups in the leaderboard, we find that the bias for our model is actually the lowest. However, due to the variance and bias trade-off, our model has a higher deviance or variance for prediction, possibly resulting from outliers in the dataset. Another possible issue would be extrapolation, which affects the prediction accuracy for some properties with extreme prices. The coverage of prediction of 0.966 indicates that our model satisfactorily captures true prices within the prediction interval.
+
+
+```{r}
+overvalued = data_test %>%
+                       mutate(price_to_pred_ratio = Y/Yhat[,1]) %>%
+                       top_n(10, price_to_pred_ratio) %>%
+                       dplyr::select(PID, price, price_to_pred_ratio, TotalSq, Overall.Qual, Neighborhood)
+undervalued = data_test %>%
+                       mutate(price_to_pred_ratio = Y/Yhat[,1]) %>%
+                       top_n(10, desc(price_to_pred_ratio)) %>%
+                       dplyr::select(PID, price, price_to_pred_ratio, TotalSq, Overall.Qual, Neighborhood)
+library(knitr)
+kable(overvalued)
+kable(undervalued)
+```
+
+- Model result:
+
+    The two tables show the top 10 most under- and over-priced properties based on our final model. The real-to-prediction ratio over 1 suggests over-priced and less than 1 under-priced. We also include some other features to compare the under and over-priced properties.
+
+
+
+
 
 ## 5. Conclusion (10 points)
 
@@ -553,7 +610,6 @@ data_train$Overall.Qual = as.numeric(data_train$Overall.Qual)
 quality.plot = ggplot(data_train, aes(x = Overall.Qual, y=price)) + geom_smooth(color="gold") + geom_count(color="red3") + theme_bw() + labs(x="Overall Quality", y="Price", title="Price by Overall Quality") + theme(plot.title = element_text(hjust=0.5))
 suppressMessages(plot(quality.plot))
 ```
-
 
 
 
