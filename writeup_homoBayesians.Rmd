@@ -546,6 +546,7 @@ Another thing we took away was the usefulness of tree models, not only in predic
 Create predictions for the validation data from your final model and write out to a file `prediction-validation.Rdata`
 This should have the same format as the models in Part I and II.
 
+Please see prediction-validation for predictions.
 ```{r, echo=FALSE}
 
 load("ames_validation.Rdata")
@@ -645,6 +646,7 @@ Yhat = exp(Yhat)
 predictions = as.data.frame(Yhat)
 predictions$PID = ames_validation$PID
 save(predictions, file="prediction-validation.Rdata")
+predictions
 ```
 
 
