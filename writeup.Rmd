@@ -2,9 +2,9 @@
 title: "Final Project Writeup"
 author: "Thomas Fleming, Eden Huang, Blaire Li, Marc Ryser"
 output:
-  word_document: default
   pdf_document: default
   html_document: default
+  word_document: default
 ---
 
 ```{r, echo=FALSE,  setup, include=FALSE}
@@ -22,8 +22,6 @@ library(dplyr)
 library(tidyr)
 
 load("ames_train.Rdata")
-
-print(paste0("The dataset has ", dim(ames_train)[1], " number of observations and ", dim(ames_train)[2], " features"))
 
 #Variables with NA's and their proportion of missing data
 miss = apply(is.na(ames_train), 2, sum)
@@ -138,7 +136,7 @@ plot(neighborhood.price.range)
 
 An interesting observation is that there is a wider dispersion among the more affluent neighborhoods based on relative inter-quartile ranges, whereas the neighborhoods with cheaper housing tend to be more concentrated around their medians. In other words, homoscedasticity is violated in this data set as variation increases with sale price. This is an important observation, as it indicates that we would be wise to transform the response variable (which we eventually did).
 
-With respect to location, we note that Ames is a college town built around Iowa State. With almost 16,000 employees, the university is by far the biggest employer in town. Using Google maps, we recorded the respective distances between the university to the different neighborhoods. Beyond a univariable analysis, we could not find an association between price and distance to university. This is illustrated in the following boxplot where we compare prices between close and distant houses with respect to the university. It was worth a try though, wasn't it.
+With respect to location, we note that Ames is a college town built around Iowa State. With almost 16,000 employees, the university is by far the biggest employer in town. Using Google maps, we recorded the respective distances between the university to the different neighborhoods. Beyond a univariable analysis, we could not find an association between price and distance to university. This is illustrated in the following boxplot where we compare prices between close and distant houses with respect to the university (defined as within 1.5 miles to Parks Library at ISU, measured using Google Maps). However, the proximity to ISU doesn't seem to affect property prices as expected.
 
 
 ```{r, echo=FALSE}
@@ -225,6 +223,8 @@ model.BIC=lm(formula = log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 +
                Baths + Kitchen.AbvGr + Kitchen.Qual + Functional + 
                Fireplaces + Garage.Cars + Paved.Drive +
                log(TotalSq), data = data_train)
+
+summary(model.BIC)
 ```
 
 
@@ -470,18 +470,7 @@ plot(model.interact.reduced)
 
 ## 4. Assessment of the final model (25 points)
 
-* Residual: must include a residual plot and a discussion
-
-* RMSE: must include an RMSE and an explanation  (other criteria desirable)
-
-* Model evaluation: must include an evaluation discussion
-
-* Model testing : must include a discussion
-
-* Model result: must include a selection of the top 10 undervalued and overvalued houses
-
-
-```{r}
+```{r, echo=FALSE, warning=FALSE}
 par(mfrow=c(2,2))
 plot(model.interact.reduced)
 summary(model.interact.reduced)
@@ -498,7 +487,7 @@ summary(model.interact.reduced)
     The diagnostic plots suggest that our model actually did a better job in predicting price for those properties in middle and high price ranges than lower price range. The residual plot has higher variance in the lower price range. In addition, the normal QQ plot generally follows a straight line, but with a heavier left tail. In the residual vs leverage plot, it can be observed that there are about 5 high leverage point, but they are not influential because no points have cook's distance greater than 0.5.
     In conclusion, our final model did a good job in predicting the prices, especially for the properties in middle and high price ranges.
       
-```{r}
+```{r, echo=FALSE}
 # extract the truth
 Y = data_test$price
 
@@ -517,7 +506,7 @@ performance(Y, Yhat)
     The RMSE for our final model is 14983.7. After comparing with other groups in the leaderboard, we find that the bias for our model is actually the lowest. However, due to the variance and bias trade-off, our model has a higher deviance or variance for prediction, possibly resulting from outliers in the dataset. Another possible issue would be extrapolation, which affects the prediction accuracy for some properties with extreme prices. The coverage of prediction of 0.966 indicates that our model satisfactorily captures true prices within the prediction interval.
 
 
-```{r}
+```{r, echo=FALSE}
 overvalued = data_test %>%
                        mutate(price_to_pred_ratio = Y/Yhat[,1]) %>%
                        top_n(10, price_to_pred_ratio) %>%
@@ -533,7 +522,7 @@ kable(undervalued)
 
 - Model result:
 
-    The two tables show the top 10 most under- and over-priced properties based on our final model. The real-to-prediction ratio over 1 suggests over-priced and less than 1 under-priced. We also include some other features to compare the under and over-priced properties. One of our teammates comments that, were he to be a proerty investor in Ames, Iowa, he would keep an eye on the Sawyer neighborhood for buying opportunities, given that there were three here in the undervalued top 10, while considering selling properties that were in the Edwards neighborhood, as there were three here in the overvalued top 10.
+    The two tables show the top 10 most under- and over-priced properties based on our final model. The real-to-prediction ratio over 1 suggests over-priced and less than 1 under-priced. We also include some other features to compare the under and over-priced properties. One of our teammates comments that, were he to be a property investor in Ames, Iowa, he would keep an eye on the Sawyer neighborhood for buying opportunities, given that there were three here in the undervalued top 10, while considering selling properties that were in the Edwards neighborhood, as there were three here in the overvalued top 10.
 
 
 
