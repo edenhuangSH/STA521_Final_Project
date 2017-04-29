@@ -21,13 +21,12 @@ library(tidyr)
 
 load("ames_train.Rdata")
 
-#print(paste0("The dataset has ", dim(ames_train)[1], " number of observations and ", dim(ames_train)[2], " features"))
+print(paste0("The dataset has ", dim(ames_train)[1], " number of observations and ", dim(ames_train)[2], " features"))
 
 #Variables with NA's and their proportion of missing data
 miss = apply(is.na(ames_train), 2, sum)
 miss_prop = round(miss[miss>0]/nrow(ames_train), 3)
-#print(miss_prop) 
-#which(miss_prop>0.5) # four features have greater than 50% of data "missing" -- drop these variables
+#print(miss_prop)
 ```
 
 
@@ -39,8 +38,6 @@ ames_train = ames_train %>% mutate(distance = ifelse(Neighborhood %in% univ, 1, 
 #ames_test = ames_test %>% mutate(distance = ifelse(Neighborhood %in% univ, 1, 0))
 
 data=ames_train
-
-
 data <- data  %>%
   #filter(!is.na(Lot.Frontage)) %>% 
   mutate(MS.SubClass= factor(MS.SubClass)) %>%
@@ -92,8 +89,6 @@ data <- data  %>%
   mutate(Functional = droplevels(Functional)) %>%
   mutate(Roof.Matl = droplevels(Roof.Matl))
 
-
-
 # Simplify Condition 1 (Park, Rail, Normal)
 ind_rail<-which(data$Condition.1=="RRNn" | data$Condition.1=="RRAn" | data$Condition.1=="RRNe" | data$Condition.1=="RRAe")
 ind_park<-which(data$Condition.1=="PosN" | data$Condition.1=="PosA")
@@ -111,6 +106,7 @@ data_train$Bsmt.Exposure<-droplevels(data_train$Bsmt.Exposure)
 data_train$Pool.Area<-data_train$Pool.Area+1
 data_train$Total.Bsmt.SF<-data_train$Total.Bsmt.SF+1
 ```
+
 
 The mantra in real estate appears to be "location, location, location." This begs for a simple visualization of house price distribution by neighborhood.
 
@@ -144,15 +140,12 @@ With respect to location, we note that Ames is a college town built around Iowa 
 
 
 ```{r, echo=FALSE}
-
 boxplot(price ~ distance, data=ames_train, names=c("close", "distant"), xlab="Location with respect to university", ylab="Price [USD]")
-
 ```
 
 
 
 Our third plot shows the relationship between sales price and total square footage, stratified by overall quality of the house. We see that there are different slopes in the relationship between sales price and total square footage, indicating the need for interaction terms between these variables (indeed, the more complex model contains such interactions).
-
 
 ```{r, echo=FALSE,  clusters}
 library(ggplot2)
@@ -178,7 +171,6 @@ Prior to selecting the variables for our simple model, we cleaned the data (big 
 Following our data cleaning, we performed exploratory analyses. We first fit a full linear model, including all available variables, and examined its residual plots for indication as to the changes we should make. We detected some non-linearity in the data, seeing a trend in the residual and standardized residual plots, and decided to make a log transformation of our response variable, which improved the model fit. Taking a note from Appendix A in Gelman's book, we also  logged all continuous explanatory variables, as this helps provide a multiplicative effect to the model. Boxplot indicated that a log-transformation for the response is reasonable.
 
 Having improved our model fit through simple variable transformations, we then went about variable selection. We found that running a step function evaluated using the Bayesian Information Criterion brought us down close to 20 predictors, giving us 22. We then used a boosted tree model (depth 1, no interactions) to evaluate the relative importance of these 22 variables, and removed log(Pool.Area), Bedrooms.AbvGr, and Heating.QC, as these variables had the lowest relative importance. This brought is to our finalized simple model, with 19 predictors.
-
 
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
@@ -242,8 +234,6 @@ model.BIC=lm(formula = log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 +
 ### Residual Plots
 The residual plots for our simple model display favorable results. The residual vs. fitted plot shows little to no pattern, and while the scale-location plot has a slight pattern, it is not severe. While there are a few outliers displayed on the Normal Q-Q plot, most observations fall within 4 standard deviations, with the majority falling very close to or on the one-to-one line. Finally, after having the function removed observations with leverage 1, we observe a favorable leverage plot, with no observations exceeding a Cook's distance of 0.5.
 
-
-
 ```{rm, echo=FALSE}
 #summary(model.BIC)
 par(mfrow=c(2,2))
@@ -260,8 +250,6 @@ Beyond the RMSE, we were very pleased to see a bias relatively closer to zero th
 
 ```{r, echo=FALSE }
 ### perfromance evlaution function
-
-
 performance<- function(Y, Yhat){
   
   bias<- mean(Y-Yhat[,1])
@@ -279,7 +267,6 @@ performance<- function(Y, Yhat){
   
   return(out)
 }
-
 ```
 
 
@@ -390,7 +377,7 @@ save(predictions, file="predict.Rdata")
 
 A<-performance(Y, Yhat)
 
-# REpeat for training data
+# Repeat for training data
 Y = data_train$price
 
 Yhat = predict(model.BIC, newdata=data_train, interval="predict")
@@ -404,14 +391,6 @@ C<-rbind(B,A)
 rownames(C)<-c("Training", "Test")
 
 kable(C)
-
-#mean(Y-Yhat)
-  
-#max(abs(Y-Yhat))
-  
-#mean(abs(Y-Yhat[1]))
-  
-#sqrt(mean((Y-Yhat)^2))
 ```
 
 
@@ -446,7 +425,6 @@ model.interact.reduced=lm(log(price) ~ log(Lot.Area) + Condition.1 + Overall.Qua
 #summary(model.interact.reduced)
 #plot(model.interact.reduced)
 
-
 results <- summary(model.interact.reduced) 
 
 id<-which(results$coefficients[,4]<1e-7)
@@ -457,7 +435,6 @@ aa<-results$coefficients[id,4]
 a<-sort.int(aa, index.return=TRUE)
 
 kable(results$coefficients[id[a$ix],])
-
 ```
 
 
@@ -482,7 +459,6 @@ performance<- function(Y, Yhat){
   
   return(out)
 }
-
 ```
 
 
@@ -491,7 +467,6 @@ Finally, here are the model analytics for the complete model.
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 par(mfrow=c(2,2))
 plot(model.interact.reduced)
-
 ```
 
 
