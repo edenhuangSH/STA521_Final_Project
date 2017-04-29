@@ -1,6 +1,7 @@
 ---
 title: "Final Project Writeup"
 output:
+  word_document: default
   pdf_document: default
   html_document: default
 ---
