@@ -1,3 +1,4 @@
+
 Stat 521 Final Project: homoBayesians
 ========================================================
 author: Thomas Fleming, Eden Huang, Blaire Li, Marc Ryser
@@ -58,13 +59,13 @@ Two Houses to Purchase
 
 |       PID|  price| price_to_pred_ratio| TotalSq| Overall.Qual|Neighborhood |
 |---------:|------:|-------------------:|-------:|------------:|:------------|
-| 535150070| 104900|           0.8279967|    1738|            4|NAmes        |
+| 527182020| 130000|           0.7556536|    1204|            8|StoneBr      |
 | 534479120| 105000|           0.8349797|    1376|            5|NAmes        |
 
-- <small>The two houses we recommend purchasing are both in the North Ames neighborhood.</small> 
-  - <small>Both in our top 10 underpriced houses; both below the median housing price for that neighborhood; in a neighborhood with a considerable number of outliers well above the interquartile range.</small>
+- <small>The two houses we recommend purchasing are both in the Stone Bridge and North Ames neighborhoods, respectively.</small> 
+  - <small>Both in our top 10 underpriced houses; both below the median housing price for that neighborhood</small>
   - <small>Both of reasonable size in square footage, falling in the middle to low end, relatively speaking.</small>
-  - <small>Overall Quality of 4 and 5, respectively. Could see a big uptick in price with some remodeling, as we saw in our graph that this uptick generally happens around the 7.5 quality mark.</small>
+  - <small>Overall Quality of 8 and 5, respectively. Could see a big uptick in price with some remodeling to the latter, as we saw in our graph that this uptick generally happens around the 7.5 quality mark.</small>
   
 Team Name and Graphic
 ==========================================================
