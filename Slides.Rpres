@@ -1,12 +1,13 @@
-Stat 521 Final Project by: homoBayesians
+Stat 521 Final Project: homoBayesians
 ========================================================
 author: Thomas Fleming, Eden Huang, Blaire Li, Marc Ryser
 date: May 1, 2017 
 autosize: true
+font-family: 'Helvetica'
 
-Price By Neighborhood
+Price By Neighborhood and By "Near Campus"
 ========================================================
-title: false
+title:false
 ```{r myplot,echo=FALSE,fig.align='center',fig.width=8,fig.height=5,dpi=300,out.width="1920px",out.height="1100px"}
 library(dplyr)
 library(tidyr)
@@ -109,10 +110,21 @@ neighborhood.price.range = ggplot(data_train, aes(x = reorder(Neighborhood, desc
 plot(neighborhood.price.range)
 ```
 
-Price By Total Square Footage and Overall Quality
-========================================================
+
+Price by "Near Campus" and by Total Square Feet and Quality
+=========================================================
 title:false
-```{r myplot1,echo=FALSE,fig.align='center',fig.width=8,fig.height=5,dpi=300,out.width="1920px",out.height="1100px"}
+```{r myplot4,echo=FALSE,fig.align='center',fig.width=8,fig.height=5,dpi=300,out.width="1920px",out.height="1100px"}
+univ = c("SWISU", "Landmrk", "CollgCr", "BrkSide", "Greens", "Blueste") # 1.5
+ames_train = ames_train %>% mutate(distance = ifelse(Neighborhood %in% univ, 1, 0))
+#ames_test = ames_test %>% mutate(distance = ifelse(Neighborhood %in% univ, 1, 0))
+
+boxplot(price ~ distance, data=ames_train, names=c("close", "distant"), xlab="Location with respect to university", ylab="Price [USD]", border="dodgerblue4",col="brown1")
+```
+
+Plot 2: The difference in prices (or lackethereof) between houses close to campus and those further away.
+***
+```{r myplot1, echo=FALSE,fig.align='center',fig.width=8,fig.height=5,dpi=300,out.width="1920px",out.height="1100px"}
 ptrain_data = data_train
 ptrain_data = ptrain_data%>%mutate(Overall.Qual.level1 = ifelse(Overall.Qual %in% c(1,2,3,4), "low", Overall.Qual))%>%
  mutate(Overall.Qual.level2 = ifelse(Overall.Qual.level1 %in% c("5","6","7"),"med",Overall.Qual.level1))%>%
@@ -123,20 +135,20 @@ f = qplot(x = TotalSq, y = price, data = ptrain_data, color = factor(Overall.Qua
 f + labs(color='Overall Quality') + xlab("Total Square Feet") + ylab("Price")+ ggtitle("Sale Price versus Total Square Feet by Overall Quality") + theme(plot.title = element_text(hjust=0.5))
 ```
 
+Plot 3: The change in prices with respect to total square footage, stratified by overall quality.
 Visualizations Rejected by the Group
 =========================================================
 title:false
-```{r myplot2,echo=FALSE,fig.align='center',fig.width=8,fig.height=5,dpi=300,out.width="1920px",out.height="1100px"}
+```{r myplot2,echo=FALSE,fig.width=8,fig.height=5,dpi=300,out.width="1920px",out.height="1300px"}
 tree.data = data_train %>% mutate(price.bin = ifelse(price <= 50000, "<= $50,000", ifelse(price > 50000 & price <= 100000, "$50,000-100,000", ifelse(price > 100000 & price <= 200000, "$100,000-200,000", ifelse(price > 200000 & price <= 300000, "$200,000-300,000", ifelse(price > 300000 & price <= 400000, "$300,000-400,000", ifelse(price > 400000 & price <= 500000, "$400,000-500,000", "> $500,000")))))))
 tree.data = as.data.frame(tree.data)
 
 area.plot = treemap(tree.data, index=c("price.bin", "price"), vSize="TotalSq", type="index", palette="Oranges", algorithm="pivotSize", title="Effect of Total Square Footage on Price Range", fontsize.title = 14)
 ```
 
-Rejected Graphic
-==========================================================
-title:false
-```{r myplot3,echo=FALSE,fig.align='center',fig.width=8,fig.height=5,dpi=300,out.width="1920px",out.height="1100px"}
+Plot 4: Treemap of Total Square Footage, Binned by Listed Price
+***
+```{r myplot3,echo=FALSE,fig.width=8,fig.height=5,dpi=300,out.width="1920px",out.height="1100px"}
 theme_bw = function (base_size = 11, base_family = "") 
 {
     theme_grey(base_size = base_size, base_family = base_family) %+replace% 
@@ -153,13 +165,164 @@ quality.plot = ggplot(data_train, aes(x = Overall.Qual, y=price)) + geom_smooth(
 suppressMessages(plot(quality.plot))
 ```
 
-(Statisticians do it with) Models
+Plot 5: Price by Overall Quality
+
+Model Results and Why Its The Best
 ==========================================================
-- The explanatory variables for our simple model included log(Lot.Area), Neighborhood, Condition.1, Overall.Qual, Overall.Cond, HouseAge, Foundation, Bsmt.Qual, Bsmt.Exposure, log(Total.Bsmt.SF), Central.Air, Baths, Kitchen.AbvGr, Kitchen.Qual, Functional, Fireplaces, Garage.Cars, Paved.Drive, log(TotalSq)
-- The explanatory variables for our complex model, complete with interactions, included log(Lot.Area), Condition.1, Overall.Qual, Baths, Neighborhood, Garage.Cars, log(Total.Bsmt.SF), log(TotalSq), Overall.Cond, HouseAge, Foundation, Bsmt.Qual, Bsmt.Exposure, Heating.QC, Central.Air, Bedroom.AbvGr, Kitchen.AbvGr, Kitchen.Qual, Functional, Fireplaces, Paved.Drive, Overall.Qual:Garage.Cars, Overall.Qual:log(TotalSq), Garage.Cars:log(TotalSq), Overall.Qual:Garage.Cars:log(TotalSq)
-- And of course, we logged our response variable.
+- <small>The most important strategies for finding our simple and complex models involved:</small>
+  - <small>scrupulous data cleaning using dplyr and tidyr</small> 
+  - <small>using a stepwise function with BIC to narrow down the number of variables</small>
+  - <small>using a boosted tree for relative variable importance to bring our number of variables under 20 for our final simple model</small>
+  - <small>utilizing a pruned decision tree to show us relevant interactions and,</small>
+  - <small>again using a stepwise function with BIC to arrive at our final complex model</small>
+- <small>Results using a linear model with transformations and appropriate interactions on test set:</small>
+```{r, echo=FALSE, warning=FALSE}
+library(knitr)
+load("ames_test.Rdata")
 
-===========================================================
+data=ames_test
 
-The End
+data <- data  %>%  
+  #filter(!is.na(Lot.Frontage)) %>% 
+  mutate(MS.SubClass= factor(MS.SubClass)) %>%
+  mutate(Alley =  factor(Alley, levels = levels(addNA(Alley)), labels = c(levels(Alley), "None"), exclude = NULL)) %>%
+  mutate(HouseAge = Yr.Sold- pmax(Year.Built, Year.Remod.Add))  %>%
+  #filter(!is.na(Mas.Vnr.Area))  %>% 
+  mutate(Bsmt.YN = 1*(!is.na(Bsmt.Qual))) %>%
+  mutate(Bsmt.Qual =  factor(Bsmt.Qual, levels = levels(addNA(Bsmt.Qual)), labels = c(levels(Bsmt.Qual), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Qual = relevel(Bsmt.Qual, ref="None")) %>%
+  mutate(Bsmt.Cond =  factor(Bsmt.Cond, levels = levels(addNA(Bsmt.Cond)), labels = c(levels(Bsmt.Cond), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Cond = relevel(Bsmt.Cond, ref="None")) %>%
+  mutate(Bsmt.Exposure =  factor(Bsmt.Exposure, levels = levels(addNA(Bsmt.Exposure)), labels = c(levels(Bsmt.Exposure), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Exposure = relevel(Bsmt.Exposure, ref="None")) %>%
+  mutate(BsmtFin.Type.1=  factor(BsmtFin.Type.1, levels = levels(addNA(BsmtFin.Type.1)), labels = c(levels(BsmtFin.Type.1), "None"), exclude = NULL)) %>%
+  mutate(BsmtFin.Type.1 = relevel(BsmtFin.Type.1, ref="None")) %>%
+  mutate(BsmtFin.Type.2=  factor(BsmtFin.Type.2, levels = levels(addNA(BsmtFin.Type.2)), labels = c(levels(BsmtFin.Type.2), "None"), exclude = NULL)) %>%
+  mutate(BsmtFin.Type.2 = relevel(BsmtFin.Type.2, ref="None")) %>%
+  mutate(X12.SF= X1st.Flr.SF+ X2nd.Flr.SF)  %>%   
+  #filter(!is.na(Bsmt.Full.Bath)) %>%
+  #filter(!is.na(Bsmt.Half.Bath)) %>%
+  mutate(Baths = Bsmt.Full.Bath + 0.5*Bsmt.Half.Bath + Full.Bath + 0.5*Half.Bath) %>%
+  mutate(Fireplace.YN = 1*(Fireplaces>0)) %>%
+  mutate(Fireplace.Qu =  factor(Fireplace.Qu, levels = levels(addNA(Fireplace.Qu)), labels = c(levels(Fireplace.Qu), "None"), exclude = NULL)) %>%
+  mutate(Fireplace.Qu = relevel(Fireplace.Qu, ref="None")) %>%
+  mutate(Garage.YN = 1*(!is.na(Garage.Cond))) %>%
+  mutate(Garage.Type =  factor(Garage.Type, levels = levels(addNA(Garage.Type)), labels = c(levels(Garage.Type), "None"), exclude = NULL)) %>%
+  mutate(Garage.Type = relevel(Garage.Type, ref="None")) %>%
+  mutate(Garage.Finish =  factor(Garage.Finish, levels = levels(addNA(Garage.Finish)), labels = c(levels(Garage.Finish), "None"), exclude = NULL)) %>%
+  mutate(Garage.Finish = relevel(Garage.Finish, ref="None")) %>%
+  mutate(Garage.Qual =  factor(Garage.Qual, levels = levels(addNA(Garage.Qual)), labels = c(levels(Garage.Qual), "None"), exclude = NULL)) %>%
+  mutate(Garage.Qual = relevel(Garage.Qual, ref="None")) %>%
+  mutate(Garage.Cond =  factor(Garage.Cond, levels = levels(addNA(Garage.Cond)), labels = c(levels(Garage.Cond), "None"), exclude = NULL)) %>%
+  mutate(Garage.Cond = relevel(Garage.Cond, ref="None")) %>%
+  mutate(Porch.Area = Wood.Deck.SF+ Open.Porch.SF+Enclosed.Porch+X3Ssn.Porch + Screen.Porch) %>%
+  mutate(Pool.YN = 1*(Pool.Area>0)) %>%
+  mutate(Pool.QC =  factor(Pool.QC, levels = levels(addNA(Pool.QC)), labels = c(levels(Pool.QC), "None"), exclude = NULL)) %>%
+  mutate(Pool.QC = relevel(Pool.QC, ref="None")) %>%
+  mutate(Fence =  factor(Fence, levels = levels(addNA(Fence)), labels = c(levels(Fence), "None"), exclude = NULL)) %>%
+  mutate(Misc.Feature =  factor(Misc.Feature, levels = levels(addNA(Misc.Feature)), labels = c(levels(Misc.Feature), "None"), exclude = NULL)) %>%
+  mutate(Mo.Sold = as.factor(Mo.Sold)) %>%
+  mutate(Yr.Sold = as.factor(Yr.Sold)) %>%
+  dplyr::select(-Garage.Yr.Blt) %>%
+  mutate(Condition.1 = as.character(Condition.1)) %>%
+  mutate(Kitchen.Qual=plyr::mapvalues(Kitchen.Qual, from = c("Po", "Fa", "TA","Gd", "Ex" ), to = c("1", "2", "3", "4", "5"))) %>%
+  mutate(Kitchen.Qual = as.numeric(as.character(Kitchen.Qual))) %>%
+  mutate(Heating.QC=plyr::mapvalues(Heating.QC, from = c("Po", "Fa", "TA","Gd", "Ex" ), to = c("1", "2", "3", "4", "5"))) %>%
+  mutate(Heating.QC = as.numeric(as.character(Heating.QC))) %>%
+  mutate(Bsmt.Qual = droplevels(Bsmt.Qual)) %>%
+  mutate(Functional = droplevels(Functional)) %>%
+  mutate(Roof.Matl = droplevels(Roof.Matl))
 
+
+
+
+ind_rail<-which(data$Condition.1=="RRNn" | data$Condition.1=="RRAn" | data$Condition.1=="RRNe" | data$Condition.1=="RRAe")
+ind_park<-which(data$Condition.1=="PosN" | data$Condition.1=="PosA")
+data$Condition.1[ind_rail]<-"Rail"
+data$Condition.1[ind_park]<-"Park"
+
+
+
+data = data %>% 
+  mutate(Condition.1 = factor(Condition.1)) %>%
+  mutate(Condition.1 = relevel(Condition.1, ref="Norm")) 
+
+data_test=data
+
+
+data_test$Bsmt.Exposure[which(data_test$Bsmt.Exposure=="")]<-"None"
+data_test$Bsmt.Exposure<-droplevels(data_test$Bsmt.Exposure)
+
+
+
+data_test$Pool.Area<-data_test$Pool.Area+1
+data_test$Total.Bsmt.SF<-data_test$Total.Bsmt.SF+1
+
+model.interact.reduced=lm(log(price) ~ log(Lot.Area) + Condition.1 + Overall.Qual + 
+    Baths + Neighborhood + Garage.Cars + log(Total.Bsmt.SF) + 
+    log(TotalSq) + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
+    Bsmt.Exposure + Heating.QC + Central.Air + Bedroom.AbvGr + 
+    Kitchen.AbvGr + Kitchen.Qual + Functional + Fireplaces + 
+    Paved.Drive + Overall.Qual:Garage.Cars + Overall.Qual:log(TotalSq) + 
+    Garage.Cars:log(TotalSq) + Overall.Qual:Garage.Cars:log(TotalSq), 
+    data = data_train)
+### performance evlaution function
+performance<- function(Y, Yhat){
+  
+  bias<- mean(Y-Yhat[,1])
+  
+  max.dev<-max(abs(Y-Yhat[,1]))
+  
+  mean.dev<-mean(abs(Y-Yhat[,1]))
+  
+  RMSE<-sqrt(mean((Y-Yhat[,1])^2))
+  
+  
+  coverage<-mean((Y>Yhat[,2]) & (Y<Yhat[,3]))
+  
+  out<-data.frame(bias=bias, max.dev=max.dev, mean.dev=mean.dev, RMSE=RMSE, Coverage=coverage)
+  
+  return(out)
+}
+# extract the truth
+Y = data_test$price
+
+# make prediction based on specific model
+Yhat = predict(model.interact.reduced, newdata=data_test, interval="predict")
+
+# depending on the response transformation
+Yhat = exp(Yhat)
+
+kable(performance(Y, Yhat))
+```
+
+Insights Into Predicting Sales Price
+==========================================================
+- According to our complex model, the most significant predictors included: 
+log(Lot.Area), log(Total.Bsmt.SF), Overall.Cond, Baths, log(TotalSq), Bsmt.QualTA, Bsmt.QualGd, Bsmt.QualFa, Bsmt.QualEx, Condition.1Feedr, Kitchen.AbvGr, FoundationPConc, NeighborhoodGrnHill, Fireplaces, Kitchen.Qual, Bsmt.QualPo, and FoundationCBlock.
+- According to our boosted tree, the features with the highest relative importance included Overall Quality, logged Total Square Footage, and Neighborhood.
+- Despite our initial beliefs, proximity to Iowa State's campus did not seem to be a factor in determining list price.
+
+Two Houses to Purchase
+==========================================================
+```{r, echo=FALSE, warning=FALSE}
+overvalued = data_test %>%
+                       mutate(price_to_pred_ratio = Y/Yhat[,1]) %>%
+                       top_n(10, price_to_pred_ratio) %>%
+                       dplyr::select(PID, price, price_to_pred_ratio, TotalSq, Overall.Qual, Neighborhood)
+undervalued = data_test %>%
+                       mutate(price_to_pred_ratio = Y/Yhat[,1]) %>%
+                       top_n(10, desc(price_to_pred_ratio)) %>%
+                       dplyr::select(PID, price, price_to_pred_ratio, TotalSq, Overall.Qual, Neighborhood)
+library(knitr)
+kable(undervalued[c(2,10),])
+```
+
+- <small>The two houses we recommend purchasing are both in the North Ames neighborhood.</small> 
+  - <small>Both in our top 10 underpriced houses; both below the median housing price for that neighborhood; in a neighborhood with a considerable number of outliers well above the interquartile range.</small>
+  - <small>Both of reasonable size in square footage, falling in the middle to low end, relatively speaking.</small>
+  - <small>Overall Quality of 4 and 5, respectively. Could see a big uptick in price with some remodeling, as we saw in our graph that this uptick generally happens around the 7.5 quality mark.</small>
+  
+Team Name and Graphic
+==========================================================
+- Our team name- homoBayesians- was created as a pun on Homo Sapiens, written in camel case (due to subjective preference). Our team graphic can be [viewed here] (https://files.slack.com/files-pri/T3Y4U2EF8-F51M8HB2S/bayesian_evol.png).
