@@ -2,8 +2,8 @@
 title: "Final Project Writeup"
 author: "Thomas Fleming, Eden Huang, Blaire Li, Marc Ryser"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
   word_document: default
 ---
 
