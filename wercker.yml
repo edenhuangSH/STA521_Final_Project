@@ -8,7 +8,7 @@ build:
           apt-get install libsasl2-dev
           install2.r mongolite
     - script:
-      name: Update scores
+      name: Final scores
       code: |
           wget --quiet "http://www.stat.duke.edu/courses/Spring17/sta521/knitr/Final_Project/Validation_Scoring.R"
           Rscript Validation_Scoring.R $TEAM $MONGO_URL $VALDATA_URL
