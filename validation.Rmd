@@ -1,0 +1,689 @@
+---
+title: "Final Project Writeup"
+author: "Thomas Fleming, Eden Huang, Blaire Li, Marc Ryser"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+```{r, echo=FALSE,  setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+## 1. Exploratory data analysis (20 points)
+
+We first performed basic checks on the training data to identify predictors with (truly) missing entries and potential abnormalities. The variable lot frontage was identified to have 282 or 18.8% missing entries. We removed this predictor, and verified at a later stage that adding it in would not lead to better model predictions.
+
+```{r, echo=FALSE,  read-data, echo=FALSE, message=FALSE, warning=FALSE}
+library(dplyr)
+library(tidyr)
+
+load("ames_train.Rdata")
+
+#Variables with NA's and their proportion of missing data
+miss = apply(is.na(ames_train), 2, sum)
+miss_prop = round(miss[miss>0]/nrow(ames_train), 3)
+#print(miss_prop)
+```
+
+
+```{r, echo=FALSE,echo=FALSE}
+# Did not remove any NA entries in Lot.frontage
+
+univ = c("SWISU", "Landmrk", "CollgCr", "BrkSide", "Greens", "Blueste") # 1.5
+ames_train = ames_train %>% mutate(distance = ifelse(Neighborhood %in% univ, 1, 0))
+#ames_test = ames_test %>% mutate(distance = ifelse(Neighborhood %in% univ, 1, 0))
+
+data=ames_train
+data <- data  %>%
+  #filter(!is.na(Lot.Frontage)) %>% 
+  mutate(MS.SubClass= factor(MS.SubClass)) %>%
+  mutate(Alley =  factor(Alley, levels = levels(addNA(Alley)), labels = c(levels(Alley), "None"), exclude = NULL)) %>%
+  mutate(HouseAge = Yr.Sold- pmax(Year.Built, Year.Remod.Add))  %>%
+  filter(!is.na(Mas.Vnr.Area))  %>% 
+  mutate(Bsmt.YN = 1*(!is.na(Bsmt.Qual))) %>%
+  mutate(Bsmt.Qual =  factor(Bsmt.Qual, levels = levels(addNA(Bsmt.Qual)), labels = c(levels(Bsmt.Qual), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Qual = relevel(Bsmt.Qual, ref="None")) %>%
+  mutate(Bsmt.Cond =  factor(Bsmt.Cond, levels = levels(addNA(Bsmt.Cond)), labels = c(levels(Bsmt.Cond), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Cond = relevel(Bsmt.Cond, ref="None")) %>%
+  mutate(Bsmt.Exposure =  factor(Bsmt.Exposure, levels = levels(addNA(Bsmt.Exposure)), labels = c(levels(Bsmt.Exposure), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Exposure = relevel(Bsmt.Exposure, ref="None")) %>%
+  mutate(BsmtFin.Type.1=  factor(BsmtFin.Type.1, levels = levels(addNA(BsmtFin.Type.1)), labels = c(levels(BsmtFin.Type.1), "None"), exclude = NULL)) %>%
+  mutate(BsmtFin.Type.1 = relevel(BsmtFin.Type.1, ref="None")) %>%
+  mutate(BsmtFin.Type.2=  factor(BsmtFin.Type.2, levels = levels(addNA(BsmtFin.Type.2)), labels = c(levels(BsmtFin.Type.2), "None"), exclude = NULL)) %>%
+  mutate(BsmtFin.Type.2 = relevel(BsmtFin.Type.2, ref="None")) %>%
+  mutate(X12.SF= X1st.Flr.SF+ X2nd.Flr.SF)  %>%   
+  filter(!is.na(Bsmt.Full.Bath)) %>%
+  filter(!is.na(Bsmt.Half.Bath)) %>%
+  mutate(Baths = Bsmt.Full.Bath + 0.5*Bsmt.Half.Bath + Full.Bath + 0.5*Half.Bath) %>%
+  mutate(Fireplace.YN = 1*(Fireplaces>0)) %>%
+  mutate(Fireplace.Qu =  factor(Fireplace.Qu, levels = levels(addNA(Fireplace.Qu)), labels = c(levels(Fireplace.Qu), "None"), exclude = NULL)) %>%
+  mutate(Fireplace.Qu = relevel(Fireplace.Qu, ref="None")) %>%
+  mutate(Garage.YN = 1*(!is.na(Garage.Cond))) %>%
+  mutate(Garage.Type =  factor(Garage.Type, levels = levels(addNA(Garage.Type)), labels = c(levels(Garage.Type), "None"), exclude = NULL)) %>%
+  mutate(Garage.Type = relevel(Garage.Type, ref="None")) %>%
+  mutate(Garage.Finish =  factor(Garage.Finish, levels = levels(addNA(Garage.Finish)), labels = c(levels(Garage.Finish), "None"), exclude = NULL)) %>%
+  mutate(Garage.Finish = relevel(Garage.Finish, ref="None")) %>%
+  mutate(Garage.Qual =  factor(Garage.Qual, levels = levels(addNA(Garage.Qual)), labels = c(levels(Garage.Qual), "None"), exclude = NULL)) %>%
+  mutate(Garage.Qual = relevel(Garage.Qual, ref="None")) %>%
+  mutate(Garage.Cond =  factor(Garage.Cond, levels = levels(addNA(Garage.Cond)), labels = c(levels(Garage.Cond), "None"), exclude = NULL)) %>%
+  mutate(Garage.Cond = relevel(Garage.Cond, ref="None")) %>%
+  mutate(Porch.Area = Wood.Deck.SF+ Open.Porch.SF+Enclosed.Porch+X3Ssn.Porch + Screen.Porch) %>%
+  mutate(Pool.YN = 1*(Pool.Area>0)) %>%
+  mutate(Pool.QC =  factor(Pool.QC, levels = levels(addNA(Pool.QC)), labels = c(levels(Pool.QC), "None"), exclude = NULL)) %>%
+  mutate(Pool.QC = relevel(Pool.QC, ref="None")) %>%
+  mutate(Fence =  factor(Fence, levels = levels(addNA(Fence)), labels = c(levels(Fence), "None"), exclude = NULL)) %>%
+  mutate(Misc.Feature =  factor(Misc.Feature, levels = levels(addNA(Misc.Feature)), labels = c(levels(Misc.Feature), "None"), exclude = NULL)) %>%
+  mutate(Mo.Sold = as.factor(Mo.Sold)) %>%
+  mutate(Yr.Sold = as.factor(Yr.Sold)) %>%
+  dplyr::select(-Garage.Yr.Blt) %>%
+  mutate(Condition.1 = as.character(Condition.1)) %>%
+  mutate(Kitchen.Qual=plyr::mapvalues(Kitchen.Qual, from = c("Po", "Fa", "TA","Gd", "Ex" ), to = c("1", "2", "3", "4", "5"))) %>%
+  mutate(Kitchen.Qual = as.numeric(as.character(Kitchen.Qual))) %>%
+  mutate(Heating.QC=plyr::mapvalues(Heating.QC, from = c("Po", "Fa", "TA","Gd", "Ex" ), to = c("1", "2", "3", "4", "5"))) %>%
+  mutate(Heating.QC = as.numeric(as.character(Heating.QC))) %>%
+  mutate(Bsmt.Qual = droplevels(Bsmt.Qual)) %>%
+  mutate(Functional = droplevels(Functional)) %>%
+  mutate(Roof.Matl = droplevels(Roof.Matl))
+
+# Simplify Condition 1 (Park, Rail, Normal)
+ind_rail<-which(data$Condition.1=="RRNn" | data$Condition.1=="RRAn" | data$Condition.1=="RRNe" | data$Condition.1=="RRAe")
+ind_park<-which(data$Condition.1=="PosN" | data$Condition.1=="PosA")
+data$Condition.1[ind_rail]<-"Rail"
+data$Condition.1[ind_park]<-"Park"
+data = data %>% 
+  mutate(Condition.1 = factor(Condition.1)) %>%
+  mutate(Condition.1 = relevel(Condition.1, ref="Norm")) 
+
+# Eliminate the one entry in 'Exposure' that had been left completely empty
+data_train<-data
+data_train$Bsmt.Exposure[which(data_train$Bsmt.Exposure=="")]<-"None"
+data_train$Bsmt.Exposure<-droplevels(data_train$Bsmt.Exposure)
+
+data_train$Pool.Area<-data_train$Pool.Area+1
+data_train$Total.Bsmt.SF<-data_train$Total.Bsmt.SF+1
+```
+
+
+The mantra in real estate appears to be "location, location, location." This begs for a simple visualization of house price distribution by neighborhood.
+
+```{r, echo=FALSE,  neighborhood_range}
+library(ggplot2)
+library(treemap)
+
+theme_light = function (base_size = 11, base_family = "") 
+{
+    theme_grey(base_size = base_size, base_family = base_family) %+replace% 
+        theme(panel.background = element_rect(fill = "lavender", 
+            colour = NA), panel.border = element_rect(fill = NA, 
+            colour = "darkslateblue", size = 0.5), panel.grid.major = element_line(colour = "lavenderblush3", 
+            size = 0.25), panel.grid.minor = element_line(colour = "lavenderblush3", 
+            size = 0.125), axis.ticks = element_line(colour = "darkslateblue", 
+            size = 0.25), legend.key = element_rect(fill = "white", 
+            colour = NA), strip.background = element_rect(fill = "darkslateblue", 
+            colour = NA), strip.text = element_text(colour = "white", 
+            size = rel(0.8)), complete = TRUE)
+}
+
+#Data Vizes
+neighborhood.price.range = ggplot(data_train, aes(x = reorder(Neighborhood, desc(price), median), y = price, fill=price)) + geom_boxplot(colour="darkslateblue",fill=terrain.colors(28, alpha=1)) + theme_light() + theme(axis.text.x=element_text(angle=45,hjust=1,vjust=1)) + labs(x = "Neighborhood", y="Price [USD]", title="Boxplot of Price by Neighborhood") + theme(plot.title = element_text(hjust=0.5))
+
+plot(neighborhood.price.range)
+```
+
+An interesting observation is that there is a wider dispersion among the more affluent neighborhoods based on relative inter-quartile ranges, whereas the neighborhoods with cheaper housing tend to be more concentrated around their medians. In other words, homoscedasticity is violated in this data set as variation increases with sale price. This is an important observation, as it indicates that we would be wise to transform the response variable (which we eventually did).
+
+With respect to location, we note that Ames is a college town built around Iowa State. With almost 16,000 employees, the university is by far the biggest employer in town. Using Google maps, we recorded the respective distances between the university to the different neighborhoods. Beyond a univariable analysis, we could not find an association between price and distance to university. This is illustrated in the following boxplot where we compare prices between close and distant houses with respect to the university (defined as within 1.5 miles to Parks Library at ISU, measured using Google Maps). However, the proximity to ISU doesn't seem to affect property prices as expected.
+
+
+```{r, echo=FALSE}
+
+boxplot(price ~ distance, data=ames_train, names=c("close", "distant"), xlab="Location with respect to university", ylab="Price [USD]", border="dodgerblue4",col="brown1")
+```
+
+
+Our third plot shows the relationship between sales price and total square footage, stratified by overall quality of the house. We see that there are different slopes in the relationship between sales price and total square footage, indicating the need for interaction terms between these variables (indeed, the more complex model contains such interactions).
+
+```{r, echo=FALSE,  clusters}
+library(ggplot2)
+ptrain_data = data_train
+ptrain_data = ptrain_data%>%mutate(Overall.Qual.level1 = ifelse(Overall.Qual %in% c(1,2,3,4), "low", Overall.Qual))%>%
+ mutate(Overall.Qual.level2 = ifelse(Overall.Qual.level1 %in% c("5","6","7"),"med",Overall.Qual.level1))%>%
+ mutate(Overall.Qual.level3 = ifelse(Overall.Qual.level2 %in% c("8","9","10"),"high",Overall.Qual.level2))
+#sum(ptrain_data$Overall.Qual.level3 %in% c("low","med","high"))
+
+ f = qplot(x = TotalSq, y = price, data = ptrain_data, color = factor(Overall.Qual.level3)) + theme_classic()
+f + labs(color='Overall Quality') + xlab("Total Square Feet") + ylab("Price")+ ggtitle("Sale Price versus Total Square Feet by Overall Quality") + theme(plot.title = element_text(hjust=0.5))
+```
+
+## 2. Development and assessment of an initial model from Part I (10 points)
+
+### Initial Model and Model Selection
+Prior to selecting the variables for our simple model, we cleaned the data (big time). We used a variety of techniques to do this, including converting variables to factors to account for non-linearities (e.g. MS.Subclass, Alley, Bsmt.Qual, Bsmt.Cond, etc.), aggregating like variables, such as combining porch square footage for different types of porches and creating a variable for total number of baths, accounting for the NA’s by adding levels named “None” where appropriate, creating a variable for house age- calculated by subtracting the max of year built and year remodeled from the year sold- and filtering out NA’s for a few particular variables with few NA’s.
+
+Following our data cleaning, we performed exploratory analyses. We first fit a full linear model, including all available variables, and examined its residual plots for indication as to the changes we should make. We detected some non-linearity in the data, seeing a trend in the residual and standardized residual plots, and decided to make a log transformation of our response variable, which improved the model fit. Taking a note from Appendix A in Gelman's book, we also logged all continuous explanatory variables, as this helps provide a multiplicative effect to the model when transformed to the original scale. The BoxCox procedure also indicated that a log-transformation for the response is reasonable.
+
+Having improved our model fit through simple variable transformations, we then went about variable selection. We found that running a step function evaluated using the Bayesian Information Criterion brought us down close to 20 predictors, giving us 22. We then used a boosted tree model (depth 1, no interactions) to evaluate the relative importance of these 22 variables, and removed log(Pool.Area), Bedrooms.AbvGr, and Heating.QC, as these variables had the lowest relative importance. This brought us to our finalized simple model, with 19 predictors.
+
+Interpreting the coefficients of our simple model, we see an intercept of ~7.59, indicating that this would be the predicted housing price given a model where we have the base categorical level for all factors and 0 for numerical variables. However, this is not particularly meaningful given that the majority of our predictions were in the 11 to 13 range. For our variables that are factors, we would include the coefficient in a particular regression given that the observation fell into that particular category for the variable. Most of these coefficients fell between 0 and |1|. We also have integer and numerical variables. Holding all else constant, a one-unit increase in Overall.Qual translates to a .05 increase in log(price); a one-unit increase in Overall.Cond translates to a .35 increase in log(price); the log(price) decreases by .00095 with each additional year of house age; a one-unit increase in log(Total.Bsmt.SF) translates to an increase of .119 in log(price); each additional bath translates to a .047 increase in log(price); each additional kitchen above ground translates to a decrease in log(price) of .10; each unit increase in kitchen quality translates to a .038 increase in log(price); each additional fireplace translates to a .03 increase in log-price; each additional car a garage can hold translates to a .04 increase in log(price); and each additional unit in log(TotalSq) translates to a .3439479 increase in log(price.)
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(gbm)
+
+boost = gbm(log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 + 
+               Overall.Qual + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
+               Bsmt.Exposure + log(Total.Bsmt.SF) + Heating.QC + Central.Air + 
+               Baths + Bedroom.AbvGr + Kitchen.AbvGr + Kitchen.Qual + Functional + 
+               Fireplaces + Garage.Cars + Paved.Drive + log(Pool.Area) + 
+               log(TotalSq), data = data_train, distribution="gaussian", n.trees=5000, interaction.depth = 1, shrinkage=0.01, verbose = F)
+
+summary.gbm = function (object, cBars = length(object$var.names), n.trees = object$n.trees, 
+    plotit = TRUE, order = TRUE, method = relative.influence, 
+    normalize = TRUE, ...) 
+{
+    if (n.trees < 1) {
+        stop("n.trees must be greater than 0.")
+    }
+    if (n.trees > object$n.trees) {
+        warning("Exceeded total number of GBM terms. Results use n.trees=", 
+            object$n.trees, " terms.\n")
+        n.trees <- object$n.trees
+    }
+    rel.inf <- method(object, n.trees)
+    rel.inf[rel.inf < 0] <- 0
+    if (order) {
+        i <- order(-rel.inf)
+    }
+    else {
+        i <- 1:length(rel.inf)
+    }
+    if (cBars == 0) 
+        cBars <- min(10, length(object$var.names))
+    if (cBars > length(object$var.names)) 
+        cBars <- length(object$var.names)
+    if (normalize) 
+        rel.inf <- 100 * rel.inf/sum(rel.inf)
+    if (plotit) {
+        barplot(rel.inf[i[cBars:1]], horiz = FALSE, col = rainbow(cBars, 
+            start = 4/6, end = 0), names = object$var.names[i[cBars:1]], 
+            main = "Relative influence", ..., cex.names = 0.55, las=2
+            )
+    }
+    return(data.frame(var = object$var.names[i], rel.inf = rel.inf[i]))
+}
+
+
+summary(boost)
+
+model.BIC=lm(formula = log(price) ~ log(Lot.Area) + Neighborhood + Condition.1 + 
+               Overall.Qual + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
+               Bsmt.Exposure + log(Total.Bsmt.SF) + Central.Air + 
+               Baths + Kitchen.AbvGr + Kitchen.Qual + Functional + 
+               Fireplaces + Garage.Cars + Paved.Drive +
+               log(TotalSq), data = data_train)
+
+summary(model.BIC)
+```
+
+
+  
+### Residual Plots
+The residual plots for our simple model display favorable results. The residual vs. fitted plot shows little to no pattern and while the scale-location plot has a slight pattern, it is not severe. While there are a few outliers displayed on the Normal Q-Q plot, most observations fall within 4 standard deviations, with the majority falling very close to or on the one-to-one line. Finally, after having the function remove observations with leverage 1 (of which there were only 3), we observe a favorable leverage plot, with no observations exceeding a Cook's distance of 0.5.
+
+```{rm, echo=FALSE}
+#summary(model.BIC)
+par(mfrow=c(2,2))
+plot(model.BIC)
+```
+
+  
+### RMSE
+The RMSE for the simple model evaluated on the test was 15,477, which corresponds to approximately 8% of the mean house price. This implies that the RMSE is fairly small.
+
+### Model Testing
+Beyond the RMSE, we were very pleased to see a bias relatively closer to zero than our fellow teams, at -165.05. We found a maximum deviation of 66,474.27, a mean deviation of 11,458.19, and coverage of 96.2%. The coverage is very favorable and, given that the mean deviation is less than 10% of the mean housing price for the training set, we are please with these results.
+
+In our hand-calculated model check, we evaluated our model on the first observation of the training set, as well as the first observation of the training set. For the training set evaluation, we get 11.73495 translating to \$124,860.20, whereas the true price listing for this observation was \$137,000. In our model check on the test set, we get a predicted value of 12.22475 or \$203,770.57, whereas the true value was $192,100. These seem to be reasonable estimates.
+
+```{r, echo=FALSE }
+### perfromance evlaution function
+performance<- function(Y, Yhat){
+  
+  bias<- mean(Y-Yhat[,1])
+  
+  max.dev<-max(abs(Y-Yhat[,1]))
+  
+  mean.dev<-mean(abs(Y-Yhat[,1]))
+  
+  RMSE<-sqrt(mean((Y-Yhat[,1])^2))
+  
+  
+  coverage<-mean((Y>Yhat[,2]) & (Y<Yhat[,3]))
+  
+  out<-data.frame(bias=bias, max.dev=max.dev, mean.dev=mean.dev, RMSE=RMSE, Coverage=coverage)
+  
+  return(out)
+}
+```
+
+
+
+```{r, echo=FALSE }
+## Prepare test data
+library(knitr)
+load("ames_test.Rdata")
+
+data=ames_test
+
+data <- data  %>%  
+  #filter(!is.na(Lot.Frontage)) %>% 
+  mutate(MS.SubClass= factor(MS.SubClass)) %>%
+  mutate(Alley =  factor(Alley, levels = levels(addNA(Alley)), labels = c(levels(Alley), "None"), exclude = NULL)) %>%
+  mutate(HouseAge = Yr.Sold- pmax(Year.Built, Year.Remod.Add))  %>%
+  #filter(!is.na(Mas.Vnr.Area))  %>% 
+  mutate(Bsmt.YN = 1*(!is.na(Bsmt.Qual))) %>%
+  mutate(Bsmt.Qual =  factor(Bsmt.Qual, levels = levels(addNA(Bsmt.Qual)), labels = c(levels(Bsmt.Qual), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Qual = relevel(Bsmt.Qual, ref="None")) %>%
+  mutate(Bsmt.Cond =  factor(Bsmt.Cond, levels = levels(addNA(Bsmt.Cond)), labels = c(levels(Bsmt.Cond), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Cond = relevel(Bsmt.Cond, ref="None")) %>%
+  mutate(Bsmt.Exposure =  factor(Bsmt.Exposure, levels = levels(addNA(Bsmt.Exposure)), labels = c(levels(Bsmt.Exposure), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Exposure = relevel(Bsmt.Exposure, ref="None")) %>%
+  mutate(BsmtFin.Type.1=  factor(BsmtFin.Type.1, levels = levels(addNA(BsmtFin.Type.1)), labels = c(levels(BsmtFin.Type.1), "None"), exclude = NULL)) %>%
+  mutate(BsmtFin.Type.1 = relevel(BsmtFin.Type.1, ref="None")) %>%
+  mutate(BsmtFin.Type.2=  factor(BsmtFin.Type.2, levels = levels(addNA(BsmtFin.Type.2)), labels = c(levels(BsmtFin.Type.2), "None"), exclude = NULL)) %>%
+  mutate(BsmtFin.Type.2 = relevel(BsmtFin.Type.2, ref="None")) %>%
+  mutate(X12.SF= X1st.Flr.SF+ X2nd.Flr.SF)  %>%   
+  #filter(!is.na(Bsmt.Full.Bath)) %>%
+  #filter(!is.na(Bsmt.Half.Bath)) %>%
+  mutate(Baths = Bsmt.Full.Bath + 0.5*Bsmt.Half.Bath + Full.Bath + 0.5*Half.Bath) %>%
+  mutate(Fireplace.YN = 1*(Fireplaces>0)) %>%
+  mutate(Fireplace.Qu =  factor(Fireplace.Qu, levels = levels(addNA(Fireplace.Qu)), labels = c(levels(Fireplace.Qu), "None"), exclude = NULL)) %>%
+  mutate(Fireplace.Qu = relevel(Fireplace.Qu, ref="None")) %>%
+  mutate(Garage.YN = 1*(!is.na(Garage.Cond))) %>%
+  mutate(Garage.Type =  factor(Garage.Type, levels = levels(addNA(Garage.Type)), labels = c(levels(Garage.Type), "None"), exclude = NULL)) %>%
+  mutate(Garage.Type = relevel(Garage.Type, ref="None")) %>%
+  mutate(Garage.Finish =  factor(Garage.Finish, levels = levels(addNA(Garage.Finish)), labels = c(levels(Garage.Finish), "None"), exclude = NULL)) %>%
+  mutate(Garage.Finish = relevel(Garage.Finish, ref="None")) %>%
+  mutate(Garage.Qual =  factor(Garage.Qual, levels = levels(addNA(Garage.Qual)), labels = c(levels(Garage.Qual), "None"), exclude = NULL)) %>%
+  mutate(Garage.Qual = relevel(Garage.Qual, ref="None")) %>%
+  mutate(Garage.Cond =  factor(Garage.Cond, levels = levels(addNA(Garage.Cond)), labels = c(levels(Garage.Cond), "None"), exclude = NULL)) %>%
+  mutate(Garage.Cond = relevel(Garage.Cond, ref="None")) %>%
+  mutate(Porch.Area = Wood.Deck.SF+ Open.Porch.SF+Enclosed.Porch+X3Ssn.Porch + Screen.Porch) %>%
+  mutate(Pool.YN = 1*(Pool.Area>0)) %>%
+  mutate(Pool.QC =  factor(Pool.QC, levels = levels(addNA(Pool.QC)), labels = c(levels(Pool.QC), "None"), exclude = NULL)) %>%
+  mutate(Pool.QC = relevel(Pool.QC, ref="None")) %>%
+  mutate(Fence =  factor(Fence, levels = levels(addNA(Fence)), labels = c(levels(Fence), "None"), exclude = NULL)) %>%
+  mutate(Misc.Feature =  factor(Misc.Feature, levels = levels(addNA(Misc.Feature)), labels = c(levels(Misc.Feature), "None"), exclude = NULL)) %>%
+  mutate(Mo.Sold = as.factor(Mo.Sold)) %>%
+  mutate(Yr.Sold = as.factor(Yr.Sold)) %>%
+  dplyr::select(-Garage.Yr.Blt) %>%
+  mutate(Condition.1 = as.character(Condition.1)) %>%
+  mutate(Kitchen.Qual=plyr::mapvalues(Kitchen.Qual, from = c("Po", "Fa", "TA","Gd", "Ex" ), to = c("1", "2", "3", "4", "5"))) %>%
+  mutate(Kitchen.Qual = as.numeric(as.character(Kitchen.Qual))) %>%
+  mutate(Heating.QC=plyr::mapvalues(Heating.QC, from = c("Po", "Fa", "TA","Gd", "Ex" ), to = c("1", "2", "3", "4", "5"))) %>%
+  mutate(Heating.QC = as.numeric(as.character(Heating.QC))) %>%
+  mutate(Bsmt.Qual = droplevels(Bsmt.Qual)) %>%
+  mutate(Functional = droplevels(Functional)) %>%
+  mutate(Roof.Matl = droplevels(Roof.Matl))
+
+
+
+
+ind_rail<-which(data$Condition.1=="RRNn" | data$Condition.1=="RRAn" | data$Condition.1=="RRNe" | data$Condition.1=="RRAe")
+ind_park<-which(data$Condition.1=="PosN" | data$Condition.1=="PosA")
+data$Condition.1[ind_rail]<-"Rail"
+data$Condition.1[ind_park]<-"Park"
+
+
+
+data = data %>% 
+  mutate(Condition.1 = factor(Condition.1)) %>%
+  mutate(Condition.1 = relevel(Condition.1, ref="Norm")) 
+
+data_test=data
+
+
+data_test$Bsmt.Exposure[which(data_test$Bsmt.Exposure=="")]<-"None"
+data_test$Bsmt.Exposure<-droplevels(data_test$Bsmt.Exposure)
+
+
+
+data_test$Pool.Area<-data_test$Pool.Area+1
+data_test$Total.Bsmt.SF<-data_test$Total.Bsmt.SF+1
+
+
+# extract the truth
+Y = data_test$price
+
+# make prediction based on specific model
+
+
+
+Yhat = predict(model.BIC, newdata=data_test, interval="predict")
+
+# depending on the response transformation
+Yhat = exp(Yhat)
+
+
+# name dataframe as predictions! DO NOT CHANGE
+predictions = as.data.frame(Yhat)
+
+predictions$PID = data_test$PID
+
+save(predictions, file="predict.Rdata")
+
+A<-performance(Y, Yhat)
+
+# Repeat for training data
+Y = data_train$price
+
+Yhat = predict(model.BIC, newdata=data_train, interval="predict")
+
+# depending on the response transformation
+Yhat = exp(Yhat)
+
+B<-performance(Y, Yhat)
+
+C<-rbind(B,A)
+rownames(C)<-c("Training", "Test")
+
+kable(C)
+```
+
+
+
+## 3. Development of the final model (20 points)
+
+We tried a range of different approaches for a more complex model. Among others, we evaluated tree models, bagging, boosting and random forests, as well as Lasso and Ridge. Based on RMSE however, none of these options was able to outperform a linear model with interaction terms. To develop the final linear model, we proceeded as follows: 
+
+* We grew a deep true
+* We pruned the tree using cross-validation
+* We read out the interactions from the final tree
+* We inserted these interactions into the full linear model
+* We ran a stepwise BIC
+
+The reason for not using a tree-based model for the final version was that the RMSE of these approaches remained substantially higher compared to the final OLS model.
+
+In consequence, the final model contains 22 different variables, two 2-way interactions and one 3-way interaction. 
+
+The 18 most important predictors are summarized in the following table.
+
+```{r, echo=FALSE}
+library(knitr)
+
+model.interact.reduced=lm(log(price) ~ log(Lot.Area) + Condition.1 + Overall.Qual + 
+    Baths + Neighborhood + Garage.Cars + log(Total.Bsmt.SF) + 
+    log(TotalSq) + Overall.Cond + HouseAge + Foundation + Bsmt.Qual + 
+    Bsmt.Exposure + Heating.QC + Central.Air + Bedroom.AbvGr + 
+    Kitchen.AbvGr + Kitchen.Qual + Functional + Fireplaces + 
+    Paved.Drive + Overall.Qual:Garage.Cars + Overall.Qual:log(TotalSq) + 
+    Garage.Cars:log(TotalSq) + Overall.Qual:Garage.Cars:log(TotalSq), 
+    data = data_train)
+#summary(model.interact.reduced)
+#plot(model.interact.reduced)
+
+results <- summary(model.interact.reduced) 
+
+id<-which(results$coefficients[,4]<1e-7)
+
+#length(id)
+
+aa<-results$coefficients[id,4]
+a<-sort.int(aa, index.return=TRUE)
+
+kable(results$coefficients[id[a$ix],])
+```
+
+
+As one would expect, and similarly to the conclusions from the simple model, we find that the overall condition of the house, lot area, and square footage are critical predictors of the house price. Interestingly, the square footage of the basement is an independent predictor, as is the number of bathrooms (Marc was particularly fascinated with the bathrooms).
+
+```{r, echo=FALSE }
+### perfromance evlaution function
+performance<- function(Y, Yhat){
+  
+  bias<- mean(Y-Yhat[,1])
+  
+  max.dev<-max(abs(Y-Yhat[,1]))
+  
+  mean.dev<-mean(abs(Y-Yhat[,1]))
+  
+  RMSE<-sqrt(mean((Y-Yhat[,1])^2))
+  
+  
+  coverage<-mean((Y>Yhat[,2]) & (Y<Yhat[,3]))
+  
+  out<-data.frame(bias=bias, max.dev=max.dev, mean.dev=mean.dev, RMES=RMSE, Coverage=coverage)
+  
+  return(out)
+}
+```
+
+
+Finally, here are the model analytics for the complete model. 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+par(mfrow=c(2,2))
+plot(model.interact.reduced)
+```
+
+
+## 4. Assessment of the final model (25 points)
+
+```{r, echo=FALSE, warning=FALSE}
+par(mfrow=c(2,2))
+plot(model.interact.reduced)
+summary(model.interact.reduced)
+```
+
+- Residual:
+
+     Pardoe's paper "Modeling home prices using realtor data" suggests an issue of hetereoscedasticity with variation increasing with sale price. While it caused us concern in the beginning, it was not an issue after we had logged the response variable. The residual plot shows that the variance is relatively constant and no obvious patterns exist, which suggests that the logged response helped account for this non-constant variance. However, there are some outliers in the bottom-left of the plot where properties are overvalued. In addition, the variance in the left part of the plot is slightly higher in predicted prices. We do not throw away outliers in the model.
+
+
+- Model Evaluation:
+
+    From the summary table, our model has a mutiple R-squared of 0.9437, which means that the final model explains about 94 percent of variation in the data. In addition, the residual standard error of 0.09 indicates that the fit on training data is decent.
+    The diagnostic plots suggest that our model actually did a better job in predicting price for those properties in middle and high price ranges than lower price range. The residual plot has higher variance in the lower price range. In addition, the normal QQ plot generally follows a straight line, but with a heavier left tail. In the residual vs leverage plot, it can be observed that there are about 5 high leverage point, but they are not influential because no points have cook's distance greater than 0.5.
+    In conclusion, our final model did a good job in predicting the prices, especially for the properties in middle and high price ranges.
+      
+```{r, echo=FALSE}
+# extract the truth
+Y = data_test$price
+
+# make prediction based on specific model
+Yhat = predict(model.interact.reduced, newdata=data_test, interval="predict")
+
+# depending on the response transformation
+Yhat = exp(Yhat)
+
+# replace model1 with model2
+predictions = as.data.frame(Yhat)
+predictions$PID = ames_test$PID
+save(predictions, file="predict.Rdata")
+
+performance(Y, Yhat)
+```
+
+
+- RMSE discussion and Model Testing:
+
+    The RMSE for our final model is 14983.7. After comparing with other groups in the leaderboard, we find that the bias for our model is actually the lowest. However, due to the variance and bias trade-off, our model has a higher deviance or variance for prediction, possibly resulting from outliers in the dataset. Another possible issue would be extrapolation, which affects the prediction accuracy for some properties with extreme prices. The coverage of prediction of 0.966 indicates that our model satisfactorily captures true prices within the prediction interval.
+
+
+```{r, echo=FALSE}
+overvalued = data_test %>%
+                       mutate(price_to_pred_ratio = Y/Yhat[,1]) %>%
+                       top_n(10, price_to_pred_ratio) %>%
+                       dplyr::select(PID, price, price_to_pred_ratio, TotalSq, Overall.Qual, Neighborhood)
+undervalued = data_test %>%
+                       mutate(price_to_pred_ratio = Y/Yhat[,1]) %>%
+                       top_n(10, desc(price_to_pred_ratio)) %>%
+                       dplyr::select(PID, price, price_to_pred_ratio, TotalSq, Overall.Qual, Neighborhood)
+library(knitr)
+kable(overvalued)
+kable(undervalued)
+```
+
+- Model result:
+
+    The two tables show the top 10 most under- and over-priced properties based on our final model. The real-to-prediction ratio over 1 suggests over-priced and less than 1 under-priced. We also include some other features to compare the under and over-priced properties. One of our teammates comments that, were he to be a property investor in Ames, Iowa, he would keep an eye on the Sawyer neighborhood for buying opportunities, given that there were three here in the undervalued top 10, while considering selling properties that were in the Edwards neighborhood, as there were three here in the overvalued top 10.
+
+
+
+
+
+## 5. Conclusion (10 points)
+
+In essence, the overall house quality, neighborhood, and total square footage were the most important predictors in our model. While this makes sense intuitively, confirming these predictors' relative importance in a quantitative analysis is reassuring. 
+
+Interestingly, the number of bathrooms is an independent predictor of house price. Who would have guessed it? Not us!
+
+In reflecting upon the work we have done and our results, we have learned several things about the data analysis process, as well as the pricing of houses.
+
+One of the key aspects that was apparent to us was how important our data-cleaning was to creating a successful model. In the early stages we had fit a model using the data more or less in its original form, with few modifications. After our meticulous data-cleaning session, the improvements were dramatic, as our bias dropped drastically and RMSE considerably.
+
+Another observation we take away from our project is the realization that OLS is often very useful, and that more advanced methods are not always optimal. Over the course of the project we attempted running Ridge, Lasso, Blasso, Trees, Random Forests, and Boosting, with linear regression of the same variables ultimately outperforming them all.
+
+Another thing we took away was the usefulness of tree models, not only in prediction, but also during model selection. We found boosting to be particularly useful in finalizing the variables we wanted to keep in our model through the examining the relative importance plot, and found a decision tree to be useful in indicating to us important interactions to consider in constructing our complex model.
+  
+### Part IV
+Create predictions for the validation data from your final model and write out to a file `prediction-validation.Rdata`
+This should have the same format as the models in Part I and II.
+
+Please see prediction-validation.Rdata for predictions.
+```{r, echo=FALSE}
+
+load("ames_validation.Rdata")
+
+data=ames_validation
+
+data <- data  %>%  
+  #filter(!is.na(Lot.Frontage)) %>% 
+  mutate(MS.SubClass= factor(MS.SubClass)) %>%
+  mutate(Alley =  factor(Alley, levels = levels(addNA(Alley)), labels = c(levels(Alley), "None"), exclude = NULL)) %>%
+  mutate(HouseAge = Yr.Sold- pmax(Year.Built, Year.Remod.Add))  %>%
+  #filter(!is.na(Mas.Vnr.Area))  %>% 
+  mutate(Bsmt.YN = 1*(!is.na(Bsmt.Qual))) %>%
+  mutate(Bsmt.Qual =  factor(Bsmt.Qual, levels = levels(addNA(Bsmt.Qual)), labels = c(levels(Bsmt.Qual), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Qual = relevel(Bsmt.Qual, ref="None")) %>%
+  mutate(Bsmt.Cond =  factor(Bsmt.Cond, levels = levels(addNA(Bsmt.Cond)), labels = c(levels(Bsmt.Cond), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Cond = relevel(Bsmt.Cond, ref="None")) %>%
+  mutate(Bsmt.Exposure =  factor(Bsmt.Exposure, levels = levels(addNA(Bsmt.Exposure)), labels = c(levels(Bsmt.Exposure), "None"), exclude = NULL)) %>%
+  mutate(Bsmt.Exposure = relevel(Bsmt.Exposure, ref="None")) %>%
+  mutate(BsmtFin.Type.1=  factor(BsmtFin.Type.1, levels = levels(addNA(BsmtFin.Type.1)), labels = c(levels(BsmtFin.Type.1), "None"), exclude = NULL)) %>%
+  mutate(BsmtFin.Type.1 = relevel(BsmtFin.Type.1, ref="None")) %>%
+  mutate(BsmtFin.Type.2=  factor(BsmtFin.Type.2, levels = levels(addNA(BsmtFin.Type.2)), labels = c(levels(BsmtFin.Type.2), "None"), exclude = NULL)) %>%
+  mutate(BsmtFin.Type.2 = relevel(BsmtFin.Type.2, ref="None")) %>%
+  mutate(X12.SF= X1st.Flr.SF+ X2nd.Flr.SF)  %>%   
+  #filter(!is.na(Bsmt.Full.Bath)) %>%
+  #filter(!is.na(Bsmt.Half.Bath)) %>%
+  mutate(Baths = Bsmt.Full.Bath + 0.5*Bsmt.Half.Bath + Full.Bath + 0.5*Half.Bath) %>%
+  mutate(Fireplace.YN = 1*(Fireplaces>0)) %>%
+  mutate(Fireplace.Qu =  factor(Fireplace.Qu, levels = levels(addNA(Fireplace.Qu)), labels = c(levels(Fireplace.Qu), "None"), exclude = NULL)) %>%
+  mutate(Fireplace.Qu = relevel(Fireplace.Qu, ref="None")) %>%
+  mutate(Garage.YN = 1*(!is.na(Garage.Cond))) %>%
+  mutate(Garage.Type =  factor(Garage.Type, levels = levels(addNA(Garage.Type)), labels = c(levels(Garage.Type), "None"), exclude = NULL)) %>%
+  mutate(Garage.Type = relevel(Garage.Type, ref="None")) %>%
+  mutate(Garage.Finish =  factor(Garage.Finish, levels = levels(addNA(Garage.Finish)), labels = c(levels(Garage.Finish), "None"), exclude = NULL)) %>%
+  mutate(Garage.Finish = relevel(Garage.Finish, ref="None")) %>%
+  mutate(Garage.Qual =  factor(Garage.Qual, levels = levels(addNA(Garage.Qual)), labels = c(levels(Garage.Qual), "None"), exclude = NULL)) %>%
+  mutate(Garage.Qual = relevel(Garage.Qual, ref="None")) %>%
+  mutate(Garage.Cond =  factor(Garage.Cond, levels = levels(addNA(Garage.Cond)), labels = c(levels(Garage.Cond), "None"), exclude = NULL)) %>%
+  mutate(Garage.Cond = relevel(Garage.Cond, ref="None")) %>%
+  mutate(Porch.Area = Wood.Deck.SF+ Open.Porch.SF+Enclosed.Porch+X3Ssn.Porch + Screen.Porch) %>%
+  mutate(Pool.YN = 1*(Pool.Area>0)) %>%
+  mutate(Pool.QC =  factor(Pool.QC, levels = levels(addNA(Pool.QC)), labels = c(levels(Pool.QC), "None"), exclude = NULL)) %>%
+  mutate(Pool.QC = relevel(Pool.QC, ref="None")) %>%
+  mutate(Fence =  factor(Fence, levels = levels(addNA(Fence)), labels = c(levels(Fence), "None"), exclude = NULL)) %>%
+  mutate(Misc.Feature =  factor(Misc.Feature, levels = levels(addNA(Misc.Feature)), labels = c(levels(Misc.Feature), "None"), exclude = NULL)) %>%
+  mutate(Mo.Sold = as.factor(Mo.Sold)) %>%
+  mutate(Yr.Sold = as.factor(Yr.Sold)) %>%
+  dplyr::select(-Garage.Yr.Blt) %>%
+  mutate(Condition.1 = as.character(Condition.1)) %>%
+  mutate(Kitchen.Qual=plyr::mapvalues(Kitchen.Qual, from = c("Po", "Fa", "TA","Gd", "Ex" ), to = c("1", "2", "3", "4", "5"))) %>%
+  mutate(Kitchen.Qual = as.numeric(as.character(Kitchen.Qual))) %>%
+  mutate(Heating.QC=plyr::mapvalues(Heating.QC, from = c("Po", "Fa", "TA","Gd", "Ex" ), to = c("1", "2", "3", "4", "5"))) %>%
+  mutate(Heating.QC = as.numeric(as.character(Heating.QC))) %>%
+  mutate(Bsmt.Qual = droplevels(Bsmt.Qual)) %>%
+  mutate(Functional = droplevels(Functional)) %>%
+  mutate(Roof.Matl = droplevels(Roof.Matl))
+
+
+
+
+ind_rail<-which(data$Condition.1=="RRNn" | data$Condition.1=="RRAn" | data$Condition.1=="RRNe" | data$Condition.1=="RRAe")
+ind_park<-which(data$Condition.1=="PosN" | data$Condition.1=="PosA")
+data$Condition.1[ind_rail]<-"Rail"
+data$Condition.1[ind_park]<-"Park"
+
+
+
+data = data %>% 
+  mutate(Condition.1 = factor(Condition.1)) %>%
+  mutate(Condition.1 = relevel(Condition.1, ref="Norm")) 
+
+data_validation=data
+
+
+data_validation$Bsmt.Exposure[which(data_validation$Bsmt.Exposure=="")]<-"None"
+data_validation$Bsmt.Exposure<-droplevels(data_validation$Bsmt.Exposure)
+
+
+
+data_validation$Pool.Area<-data_validation$Pool.Area+1
+data_validation$Total.Bsmt.SF<-data_validation$Total.Bsmt.SF+1
+
+
+# extract the truth
+Y = data_validation$price
+
+# make prediction based on specific model
+
+
+
+Yhat = predict(model.interact.reduced, newdata=data_validation, interval="predict")
+
+# depending on the response transformation
+Yhat = exp(Yhat)
+
+
+predictions = as.data.frame(Yhat)
+predictions$PID = ames_validation$PID
+save(predictions, file="prediction-validation.Rdata")
+```
+
+
+### Appendix
+
+One team member was really into making graphs that were subsequently rejected by the rest of the team. As a token of appreciation to the energetic team member, we include their visualizations as an appendix.
+
+```{r, echo=FALSE}
+library(treemap)
+
+tree.data = data_train %>% mutate(price.bin = ifelse(price <= 50000, "<= $50,000", ifelse(price > 50000 & price <= 100000, "$50,000-100,000", ifelse(price > 100000 & price <= 200000, "$100,000-200,000", ifelse(price > 200000 & price <= 300000, "$200,000-300,000", ifelse(price > 300000 & price <= 400000, "$300,000-400,000", ifelse(price > 400000 & price <= 500000, "$400,000-500,000", "> $500,000")))))))
+tree.data = as.data.frame(tree.data)
+
+area.plot = treemap(tree.data, index=c("price.bin", "price"), vSize="TotalSq", type="index", palette="Oranges", algorithm="pivotSize", title="Effect of Total Square Footage on Price Range", fontsize.title = 14)
+
+theme_bw = function (base_size = 11, base_family = "") 
+{
+    theme_grey(base_size = base_size, base_family = base_family) %+replace% 
+        theme(panel.background = element_rect(fill = "aliceblue", 
+            colour = NA), panel.border = element_rect(fill = NA, 
+            colour = "Navy"), panel.grid.major = element_line(colour = "cornflowerblue"), 
+            panel.grid.minor = element_line(colour = "cornflowerblue", 
+                size = 0.25), strip.background = element_rect(fill = "cornflowerblue", 
+                colour = "Navy"), legend.key = element_rect(fill = "white", 
+                colour = NA), complete = TRUE)
+}
+
+data_train$Overall.Qual = as.numeric(data_train$Overall.Qual)
+quality.plot = ggplot(data_train, aes(x = Overall.Qual, y=price)) + geom_smooth(color="gold") + geom_count(color="red3") + theme_bw() + labs(x="Overall Quality", y="Price", title="Price by Overall Quality") + theme(plot.title = element_text(hjust=0.5))
+suppressMessages(plot(quality.plot))
+```
+
+
