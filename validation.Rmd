@@ -653,7 +653,7 @@ Yhat = exp(Yhat)
 
 predictions = as.data.frame(Yhat)
 predictions$PID = ames_validation$PID
-save(predictions, file="prediction-validation.Rdata")
+save(predictions, file="predict-validation-local.Rdata")
 ```
 
 
