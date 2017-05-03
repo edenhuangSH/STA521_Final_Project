@@ -555,7 +555,7 @@ Create predictions for the validation data from your final model and write out t
 This should have the same format as the models in Part I and II.
 
 Please see prediction-validation.Rdata for predictions.
-```{r, echo=FALSE}
+```{r}
 
 load("ames_validation.Rdata")
 
